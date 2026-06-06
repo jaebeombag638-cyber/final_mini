@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -11,6 +11,13 @@ class GameState:
     is_game_over: bool = False
     reached_ending: bool = False
     game_over_reason: str | None = None
+    stage_results: dict[int, str] = field(
+        default_factory=lambda: {
+            1: "pending",
+            2: "pending",
+            3: "pending",
+        }
+    )
 
     def enter_game_over(self, reason: str) -> None:
         self.is_game_over = True
@@ -20,3 +27,11 @@ class GameState:
     def reach_ending(self) -> None:
         self.reached_ending = True
         self.current_scene = "ending"
+
+    def mark_stage_clear(self, stage: int) -> None:
+        self.current_stage = stage
+        self.stage_results[stage] = "clear"
+
+    def mark_stage_failed(self, stage: int) -> None:
+        self.current_stage = stage
+        self.stage_results[stage] = "failed"

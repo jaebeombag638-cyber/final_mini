@@ -25,3 +25,21 @@ def test_game_state_can_enter_game_over_and_ending():
     game_state.reach_ending()
     assert game_state.reached_ending is True
     assert game_state.current_scene == "ending"
+
+
+def test_game_state_tracks_stage_results():
+    game_state = GameState()
+
+    assert game_state.stage_results == {
+        1: "pending",
+        2: "pending",
+        3: "pending",
+    }
+
+    game_state.mark_stage_clear(1)
+    assert game_state.current_stage == 1
+    assert game_state.stage_results[1] == "clear"
+
+    game_state.mark_stage_failed(2)
+    assert game_state.current_stage == 2
+    assert game_state.stage_results[2] == "failed"
