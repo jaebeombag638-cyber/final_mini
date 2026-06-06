@@ -1,0 +1,53 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+yourface/
+
+# Local IDE/editor settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project docs
+docs/
+
+# Runtime logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Media/model artifacts
+*.pt
+*.onnx
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+assets/raw/
+
+# Local secrets/config overrides
+.env
+.env.*
+local_config.py
+
+# codex things
+AGENTS.md
+.codegraph/
+
+scripts/
