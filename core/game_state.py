@@ -1,13 +1,17 @@
 from dataclasses import dataclass, field
 
 
+MouthLandmark = tuple[float, float]
+MouthLandmarks = tuple[MouthLandmark, ...]
+
+
 @dataclass
 class GameState:
     """게임의 현재 상태를 전부 담는 클래스."""
 
     current_scene: str = "start"
-    baseline_emotion: str | None = None
-    current_emotion: str = "unknown"
+    baseline_mouth_landmarks: MouthLandmarks | None = None
+    current_mouth_landmarks: MouthLandmarks = ()
     current_audio_db: float = 0.0
     current_stage: int = 0
     is_game_over: bool = False
@@ -33,9 +37,13 @@ class GameState:
     def change_scene(self, scene_name: str) -> None:
         self.current_scene = scene_name
 
-    def update_emotion(self, baseline: str | None, current: str) -> None:
-        self.baseline_emotion = baseline
-        self.current_emotion = current
+    def update_mouth_landmarks(
+        self,
+        baseline: MouthLandmarks | None,
+        current: MouthLandmarks,
+    ) -> None:
+        self.baseline_mouth_landmarks = baseline
+        self.current_mouth_landmarks = current
 
     def update_audio_db(self, audio_db: float) -> None:
         self.current_audio_db = audio_db
