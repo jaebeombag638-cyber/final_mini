@@ -43,3 +43,16 @@ def test_game_state_tracks_stage_results():
     game_state.mark_stage_failed(2)
     assert game_state.current_stage == 2
     assert game_state.stage_results[2] == "failed"
+
+
+def test_game_state_updates_shared_scene_data():
+    game_state = GameState()
+
+    game_state.change_scene("stage1")
+    game_state.update_emotion(baseline="neutral", current="happy")
+    game_state.update_audio_db(42.5)
+
+    assert game_state.current_scene == "stage1"
+    assert game_state.baseline_emotion == "neutral"
+    assert game_state.current_emotion == "happy"
+    assert game_state.current_audio_db == 42.5

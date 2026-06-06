@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GameState:
+    """게임의 현재 상태를 전부 담는 클래스."""
+
     current_scene: str = "start"
     baseline_emotion: str | None = None
     current_emotion: str = "unknown"
@@ -27,6 +29,16 @@ class GameState:
     def reach_ending(self) -> None:
         self.reached_ending = True
         self.current_scene = "ending"
+
+    def change_scene(self, scene_name: str) -> None:
+        self.current_scene = scene_name
+
+    def update_emotion(self, baseline: str | None, current: str) -> None:
+        self.baseline_emotion = baseline
+        self.current_emotion = current
+
+    def update_audio_db(self, audio_db: float) -> None:
+        self.current_audio_db = audio_db
 
     def mark_stage_clear(self, stage: int) -> None:
         self.current_stage = stage
