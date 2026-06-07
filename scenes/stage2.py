@@ -5,14 +5,18 @@ from core.scene import Scene
 
 
 class Stage2Scene(Scene):
+    def __init__(self) -> None:
+        self._elapsed: float = 0.0
+
     def handle_event(self, event, game_state) -> str | None:
-        if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            return "stage3"
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return "quit"
         return None
 
     def update(self, dt, game_state, services) -> str | None:
+        self._elapsed += dt
+        if self._elapsed >= config.STAGE_TRANSITION_SECONDS:
+            return "stage3"
         return None
 
     def draw(self, screen, game_state, services) -> None:

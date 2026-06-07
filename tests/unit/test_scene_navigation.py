@@ -18,13 +18,22 @@ def test_space_key_moves_through_temporary_scene_flow():
     scenes_with_next_scene = [
         (StartPageScene(), "intro"),
         (IntroScene(), "stage1"),
-        (Stage1Scene(), "stage2"),
-        (Stage2Scene(), "stage3"),
         (Stage3Scene(), "ending"),
     ]
 
     for scene, next_scene in scenes_with_next_scene:
         assert scene.handle_event(keydown_event(pygame.K_SPACE), object()) == next_scene
+
+
+def test_stage_scenes_transition_after_five_seconds():
+    stage1 = Stage1Scene()
+    stage2 = Stage2Scene()
+
+    assert stage1.update(dt=4.9, game_state=object(), services={}) is None
+    assert stage1.update(dt=0.1, game_state=object(), services={}) == "stage2"
+
+    assert stage2.update(dt=4.9, game_state=object(), services={}) is None
+    assert stage2.update(dt=0.1, game_state=object(), services={}) == "stage3"
 
 
 def test_escape_key_requests_quit_from_temporary_scenes():
