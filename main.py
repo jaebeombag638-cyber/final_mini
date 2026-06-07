@@ -1,4 +1,5 @@
 import config
+from core.audio import AudioMeter
 from core.camera import Camera
 from core.game_state import GameState
 from scenes.ending import EndingScene
@@ -23,7 +24,7 @@ SERVICE_NAMES = (
 def create_services() -> dict[str, object | None]:
     return {
         "camera": Camera(),
-        "audio": None,
+        "audio": AudioMeter(),
         "face_tracker": None,
         "detector": None,
         "speech": None,
@@ -32,9 +33,9 @@ def create_services() -> dict[str, object | None]:
 
 
 def release_services(services: dict[str, object | None]) -> None:
-    camera = services.get("camera")
-    if camera is not None:
-        camera.release()
+    for service in services.values():
+        if service is not None and hasattr(service, "release"):
+            service.release()
 
 
 def create_scenes() -> dict[str, object]:

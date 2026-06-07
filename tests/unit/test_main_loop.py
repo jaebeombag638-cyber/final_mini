@@ -5,6 +5,7 @@ from main import (
     create_services,
     release_services,
 )
+from core.audio import AudioMeter
 from core.camera import Camera
 from core.game_state import GameState
 from scenes.ending import EndingScene
@@ -21,26 +22,28 @@ def test_create_services_prepares_common_service_keys():
 
     assert tuple(services.keys()) == SERVICE_NAMES
     assert isinstance(services["camera"], Camera)
-    assert services["audio"] is None
+    assert isinstance(services["audio"], AudioMeter)
     assert services["face_tracker"] is None
     assert services["detector"] is None
     assert services["speech"] is None
     assert services["rules"] is None
 
 
-def test_release_services_releases_camera_service():
-    class FakeCamera:
+def test_release_services_releases_releasable_services():
+    class FakeService:
         def __init__(self):
             self.released = False
 
         def release(self):
             self.released = True
 
-    camera = FakeCamera()
+    camera = FakeService()
+    audio = FakeService()
 
-    release_services({"camera": camera})
+    release_services({"camera": camera, "audio": audio})
 
     assert camera.released is True
+    assert audio.released is True
 
 
 def test_create_scenes_registers_all_scene_names():
