@@ -55,6 +55,12 @@ def test_track_extracts_normalized_mouth_landmarks():
     result = tracker.track(frame=object(), now=1.0)
 
     assert result.face_detected is True
+    assert tracker.last_raw_mouth_landmarks == (
+        (0.4, 0.5),
+        (0.6, 0.5),
+        (0.5, 0.45),
+        (0.5, 0.55),
+    )
     assert result.mouth_landmarks == (
         (-0.5, 0.0),
         (0.5, 0.0),

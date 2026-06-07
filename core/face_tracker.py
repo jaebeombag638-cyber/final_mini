@@ -44,6 +44,7 @@ class FaceTracker:
         self.landmarker_factory = landmarker_factory
         self.check_interval_seconds = check_interval_seconds
         self.baseline_mouth_landmarks: MouthLandmarks | None = None
+        self.last_raw_mouth_landmarks: MouthLandmarks = ()
         self._last_checked_at: float | None = None
         self._last_result: FaceTrackingResult | None = None
         self._load_error_message: str | None = None
@@ -108,6 +109,7 @@ class FaceTracker:
     def extract_mouth_landmarks(self, face_landmarks) -> MouthLandmarks:
         landmarks = self._select_first_face(face_landmarks)
         if not landmarks:
+            self.last_raw_mouth_landmarks = ()
             return ()
 
         try:
@@ -116,12 +118,20 @@ class FaceTracker:
             upper_lip = self._point(landmarks[UPPER_LIP])
             lower_lip = self._point(landmarks[LOWER_LIP])
         except (IndexError, TypeError, AttributeError):
+            self.last_raw_mouth_landmarks = ()
             return ()
 
         mouth_width = dist(left_corner, right_corner)
         if mouth_width == 0:
+            self.last_raw_mouth_landmarks = ()
             return ()
 
+        self.last_raw_mouth_landmarks = (
+            left_corner,
+            right_corner,
+            upper_lip,
+            lower_lip,
+        )
         center = (
             (left_corner[0] + right_corner[0]) / 2,
             (left_corner[1] + right_corner[1]) / 2,
