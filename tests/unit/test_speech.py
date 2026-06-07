@@ -1,4 +1,7 @@
-from core.speech import SpeechRecognitionResult, SpeechRecognizer
+from unittest.mock import patch
+from pathlib import Path
+
+from core.speech import SpeechRecognitionResult, SpeechRecognizer, WhisperAdapter
 
 
 class FakeRecorder:
@@ -24,6 +27,24 @@ class FakeWhisperModel:
 class FailingWhisperModel:
     def transcribe(self, samples):
         raise RuntimeError("Whisper 오류")
+
+
+class FakeWhisperPackage:
+    def __init__(self):
+        self.calls = []
+
+    def load_model(self, model_name, download_root):
+        self.calls.append((model_name, download_root))
+        return object()
+
+
+class FakeWhisperAdapter(WhisperAdapter):
+    def __init__(self, whisper_package, model_name, model_dir):
+        self.whisper_package = whisper_package
+        super().__init__(model_name, model_dir)
+
+    def _import_whisper(self):
+        return self.whisper_package
 
 
 def test_similarity_returns_one_for_same_target_text():
@@ -87,3 +108,14 @@ def test_recognize_returns_fallback_result_when_whisper_fails():
         is_fallback=True,
         error_message="Whisper 오류",
     )
+
+
+def test_whisper_adapter_loads_model_from_configured_model_directory():
+    whisper_package = FakeWhisperPackage()
+    model_dir = "assets/models"
+
+    with patch("core.speech.Path.mkdir") as mkdir:
+        FakeWhisperAdapter(whisper_package, "tiny", model_dir)
+
+    assert whisper_package.calls == [("tiny", str(Path(model_dir)))]
+    mkdir.assert_called_once_with(parents=True, exist_ok=True)

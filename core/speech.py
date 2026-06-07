@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from pathlib import Path
 from typing import Any
 
 import config
@@ -27,6 +28,7 @@ class SpeechRecognizer:
         pass_score: float = config.SPEECH_SIMILARITY_PASS,
         sample_rate: int = 16000,
         model_name: str = config.WHISPER_MODEL_NAME,
+        model_dir: str = config.WHISPER_MODEL_DIR,
         recorder: Any | None = None,
         model: Any | None = None,
         model_factory: Callable[[], Any] | None = None,
@@ -35,6 +37,7 @@ class SpeechRecognizer:
         self.pass_score = pass_score
         self.sample_rate = sample_rate
         self.model_name = model_name
+        self.model_dir = model_dir
         self.recorder = recorder or SoundDeviceRecorder()
         self.model = model
         self.model_factory = model_factory
@@ -89,7 +92,7 @@ class SpeechRecognizer:
         return self.model
 
     def _create_default_model(self):
-        return WhisperAdapter(self.model_name)
+        return WhisperAdapter(self.model_name, self.model_dir)
 
     def _normalize_text(self, text: str) -> str:
         return "".join(str(text).lower().split())
@@ -119,9 +122,11 @@ class SoundDeviceRecorder:
 class WhisperAdapter:
     """openai-whisper 호출부를 SpeechRecognizer에서 분리한다."""
 
-    def __init__(self, model_name: str) -> None:
+    def __init__(self, model_name: str, model_dir: str = config.WHISPER_MODEL_DIR) -> None:
         whisper = self._import_whisper()
-        self._model = whisper.load_model(model_name)
+        model_path = Path(model_dir)
+        model_path.mkdir(parents=True, exist_ok=True)
+        self._model = whisper.load_model(model_name, download_root=str(model_path))
 
     def transcribe(self, samples) -> str:
         audio = self._prepare_audio(samples)
