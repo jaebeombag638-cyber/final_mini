@@ -121,20 +121,20 @@ class IntroScene(Scene):
             self._player_box = None
             return
 
-        self._player_box = self._scale_bbox(player_bbox, frame)
+        self._player_box = self._scale_mirrored_bbox(player_bbox, frame)
         if not self._fake_boxes:
             self._fake_boxes = _make_fake_boxes(
                 self._fake_box_count,
                 pygame.Rect(*self._player_box),
             )
 
-    def _scale_bbox(self, bbox: tuple[int, int, int, int], frame) -> tuple[int, int, int, int]:
+    def _scale_mirrored_bbox(self, bbox: tuple[int, int, int, int], frame) -> tuple[int, int, int, int]:
         x1, y1, x2, y2 = bbox
         frame_width, frame_height = self._get_frame_size(frame)
         scale_x = config.SCREEN_WIDTH / frame_width
         scale_y = config.SCREEN_HEIGHT / frame_height
         return (
-            int(x1 * scale_x),
+            int((frame_width - x2) * scale_x),
             int(y1 * scale_y),
             int((x2 - x1) * scale_x),
             int((y2 - y1) * scale_y),

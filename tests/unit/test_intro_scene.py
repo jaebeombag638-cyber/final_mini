@@ -55,7 +55,7 @@ def test_intro_scene_uses_yolo_person_bbox_for_player_box():
 
     assert transition is None
     assert detector.detect_calls == [(frame, 1)]
-    assert scene._player_box == (20, 30, 200, 300)
+    assert scene._player_box == (1060, 30, 200, 300)
 
 
 def test_intro_scene_moves_to_stage1_after_duration():

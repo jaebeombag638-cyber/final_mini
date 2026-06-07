@@ -69,10 +69,11 @@ def _draw_detections(screen, font, frame, detection_result) -> None:
     import pygame
 
     scale_x, scale_y = _calculate_scale(frame, screen.get_size())
+    frame_width = _get_frame_width(frame)
     for detection in detection_result.detections:
         x1, y1, x2, y2 = detection.bbox
         rect = pygame.Rect(
-            int(x1 * scale_x),
+            int((frame_width - x2) * scale_x),
             int(y1 * scale_y),
             int((x2 - x1) * scale_x),
             int((y2 - y1) * scale_y),
@@ -120,16 +121,27 @@ def _draw_status(screen, font, small_font, camera_frame, detection_result) -> No
 
 def _calculate_scale(frame, screen_size: tuple[int, int]) -> tuple[float, float]:
     screen_width, screen_height = screen_size
-    try:
-        frame_height, frame_width = frame.shape[:2]
-    except AttributeError:
-        frame_height = len(frame)
-        frame_width = len(frame[0]) if frame_height else screen_width
+    frame_width, frame_height = _get_frame_size(frame, screen_width)
 
     if frame_width == 0 or frame_height == 0:
         return 1.0, 1.0
 
     return screen_width / frame_width, screen_height / frame_height
+
+
+def _get_frame_width(frame) -> int:
+    frame_width, _ = _get_frame_size(frame, 1)
+    return frame_width
+
+
+def _get_frame_size(frame, fallback_width: int) -> tuple[int, int]:
+    try:
+        frame_height, frame_width = frame.shape[:2]
+    except AttributeError:
+        frame_height = len(frame)
+        frame_width = len(frame[0]) if frame_height else fallback_width
+
+    return frame_width, frame_height
 
 
 if __name__ == "__main__":
