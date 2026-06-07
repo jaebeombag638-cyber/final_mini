@@ -20,7 +20,7 @@ class Stage3Scene(Scene):
             return None
 
         screen.fill((0, 0, 0))
-        font = pygame.font.Font(None, 96)
+        font = pygame.font.Font(config.FONT_PATH, 96)
         text = font.render("STAGE 3", True, (255, 255, 255))
         screen.blit(
             text,
