@@ -1,3 +1,5 @@
 pygame
 pytest
 opencv-python
+numpy==2.2.6
+sounddevice
