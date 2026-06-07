@@ -1,6 +1,7 @@
 import config
 from core.audio import AudioMeter
 from core.camera import Camera
+from core.face_tracker import FaceTracker
 from core.game_state import GameState
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
@@ -25,7 +26,7 @@ def create_services() -> dict[str, object | None]:
     return {
         "camera": Camera(),
         "audio": AudioMeter(),
-        "face_tracker": None,
+        "face_tracker": FaceTracker(),
         "detector": None,
         "speech": None,
         "rules": None,
