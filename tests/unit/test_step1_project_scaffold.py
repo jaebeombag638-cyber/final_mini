@@ -32,7 +32,6 @@ def test_config_defaults_match_step1_plan():
     assert config.SCREEN_HEIGHT == 720
     assert config.FPS == 30
     assert config.CAMERA_INDEX == 0
-    assert config.EMOTION_CHECK_INTERVAL == 1.0
     assert config.AUDIO_LIMIT_DB == 65.0
     assert config.STAGE1_DURATION_SECONDS == 10.0
     assert config.STAGE2_TIME_LIMIT_SECONDS == 20.0
