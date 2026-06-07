@@ -25,18 +25,22 @@ class GameState:
         }
     )
 
+    # 게임 오버 처리
     def enter_game_over(self, reason: str) -> None:
         self.is_game_over = True
         self.current_scene = "game_over"
         self.game_over_reason = reason
 
+    # 엔딩 도달 처리
     def reach_ending(self) -> None:
         self.reached_ending = True
         self.current_scene = "ending"
 
+    # 장면 변경 처리
     def change_scene(self, scene_name: str) -> None:
         self.current_scene = scene_name
 
+    # 입 랜드마크 업데이트
     def update_mouth_landmarks(
         self,
         baseline: MouthLandmarks | None,
@@ -45,13 +49,16 @@ class GameState:
         self.baseline_mouth_landmarks = baseline
         self.current_mouth_landmarks = current
 
+    # 오디오 데시벨 업데이트
     def update_audio_db(self, audio_db: float) -> None:
         self.current_audio_db = audio_db
 
+    # 스테이지 clear 처리
     def mark_stage_clear(self, stage: int) -> None:
         self.current_stage = stage
         self.stage_results[stage] = "clear"
 
+    # 스테이지 실패 처리
     def mark_stage_failed(self, stage: int) -> None:
         self.current_stage = stage
         self.stage_results[stage] = "failed"
