@@ -3,7 +3,9 @@ from main import (
     apply_scene_transition,
     create_scenes,
     create_services,
+    release_services,
 )
+from core.camera import Camera
 from core.game_state import GameState
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
@@ -18,14 +20,27 @@ def test_create_services_prepares_common_service_keys():
     services = create_services()
 
     assert tuple(services.keys()) == SERVICE_NAMES
-    assert services == {
-        "camera": None,
-        "audio": None,
-        "face_tracker": None,
-        "detector": None,
-        "speech": None,
-        "rules": None,
-    }
+    assert isinstance(services["camera"], Camera)
+    assert services["audio"] is None
+    assert services["face_tracker"] is None
+    assert services["detector"] is None
+    assert services["speech"] is None
+    assert services["rules"] is None
+
+
+def test_release_services_releases_camera_service():
+    class FakeCamera:
+        def __init__(self):
+            self.released = False
+
+        def release(self):
+            self.released = True
+
+    camera = FakeCamera()
+
+    release_services({"camera": camera})
+
+    assert camera.released is True
 
 
 def test_create_scenes_registers_all_scene_names():

@@ -1,4 +1,5 @@
 import config
+from core.camera import Camera
 from core.game_state import GameState
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
@@ -20,7 +21,20 @@ SERVICE_NAMES = (
 
 
 def create_services() -> dict[str, object | None]:
-    return {service_name: None for service_name in SERVICE_NAMES}
+    return {
+        "camera": Camera(),
+        "audio": None,
+        "face_tracker": None,
+        "detector": None,
+        "speech": None,
+        "rules": None,
+    }
+
+
+def release_services(services: dict[str, object | None]) -> None:
+    camera = services.get("camera")
+    if camera is not None:
+        camera.release()
 
 
 def create_scenes() -> dict[str, object]:
@@ -56,37 +70,39 @@ def run() -> None:
     services = create_services()
     scenes = create_scenes()
 
-    running = True
-    while running:
-        current_scene = scenes[game_state.current_scene]
+    try:
+        running = True
+        while running:
+            current_scene = scenes[game_state.current_scene]
 
-        for event in pygame.event.get():   # 사용자 입력 이벤트 처리
-            if event.type == pygame.QUIT:
-                running = False
+            for event in pygame.event.get():   # 사용자 입력 이벤트 처리
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+
+                transition = current_scene.handle_event(event, game_state)
+                running = apply_scene_transition(transition, game_state)
+                if not running:
+                    break
+
+            if not running:
                 break
 
-            transition = current_scene.handle_event(event, game_state)
+            dt = clock.get_time() / 1000
+            current_scene = scenes[game_state.current_scene]
+            transition = current_scene.update(dt, game_state, services)
             running = apply_scene_transition(transition, game_state)
             if not running:
                 break
 
-        if not running:
-            break
-
-        dt = clock.get_time() / 1000
-        current_scene = scenes[game_state.current_scene]
-        transition = current_scene.update(dt, game_state, services)
-        running = apply_scene_transition(transition, game_state)
-        if not running:
-            break
-
-        current_scene = scenes[game_state.current_scene]
-        screen.fill((0, 0, 0))
-        current_scene.draw(screen, game_state, services)
-        pygame.display.flip()   # 화면 업데이트 (지금까지 그린 거 출력)
-        clock.tick(config.FPS)  # 프레임 제한
-
-    pygame.quit()
+            current_scene = scenes[game_state.current_scene]
+            screen.fill((0, 0, 0))
+            current_scene.draw(screen, game_state, services)
+            pygame.display.flip()   # 화면 업데이트 (지금까지 그린 거 출력)
+            clock.tick(config.FPS)  # 프레임 제한
+    finally:
+        release_services(services)
+        pygame.quit()
 
 
 if __name__ == "__main__":
