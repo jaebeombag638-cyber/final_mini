@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pygame
 
 import config
@@ -9,6 +11,7 @@ _BACKGROUND_COLOR = (20, 20, 20)
 _OVERLAY_COLOR = (0, 0, 0, 120)
 _TITLE_COLOR = (255, 255, 255)
 _HINT_COLOR = (200, 200, 200)
+_KOREAN_FONT_PATH = Path(__file__).resolve().parents[1] / "assets" / "fonts" / "MUNMAK_DALBANCHE.ttf"
 
 
 class StartPageScene(Scene):
@@ -73,9 +76,8 @@ class StartPageScene(Scene):
         overlay.fill(_OVERLAY_COLOR)
         screen.blit(overlay, (0, 0))
 
-        korean_font = "applesdgothicneo"
-        font_title = pygame.font.SysFont(korean_font, 120, bold=True)
-        font_sub = pygame.font.SysFont(korean_font, 48)
+        font_title = pygame.font.Font(_KOREAN_FONT_PATH, 90)
+        font_sub = pygame.font.Font(_KOREAN_FONT_PATH, 40)
 
         title = font_title.render("당신은 지금 혼자 있나요?", True, _TITLE_COLOR)
         screen.blit(title, title.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 60)))
