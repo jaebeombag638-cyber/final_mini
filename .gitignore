@@ -50,4 +50,5 @@ local_config.py
 AGENTS.md
 .codegraph/
 
-scripts/
+scripts/run_yourface.cmd
+scripts/run_yourface.ps1
