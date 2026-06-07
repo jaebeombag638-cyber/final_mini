@@ -4,6 +4,7 @@ from core.camera import Camera
 from core.detector import Detector
 from core.face_tracker import FaceTracker
 from core.game_state import GameState
+from core.speech import SpeechRecognizer
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
 from scenes.intro import IntroScene
@@ -29,7 +30,7 @@ def create_services() -> dict[str, object | None]:
         "audio": AudioMeter(),
         "face_tracker": FaceTracker(),
         "detector": Detector(),
-        "speech": None,
+        "speech": SpeechRecognizer(),
         "rules": None,
     }
 

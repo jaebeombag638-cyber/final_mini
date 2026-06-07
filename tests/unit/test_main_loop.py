@@ -10,6 +10,7 @@ from core.camera import Camera
 from core.detector import Detector
 from core.face_tracker import FaceTracker
 from core.game_state import GameState
+from core.speech import SpeechRecognizer
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
 from scenes.intro import IntroScene
@@ -27,7 +28,7 @@ def test_create_services_prepares_common_service_keys():
     assert isinstance(services["audio"], AudioMeter)
     assert isinstance(services["face_tracker"], FaceTracker)
     assert isinstance(services["detector"], Detector)
-    assert services["speech"] is None
+    assert isinstance(services["speech"], SpeechRecognizer)
     assert services["rules"] is None
 
 
