@@ -39,10 +39,12 @@ class FaceTracker:
         landmarker: Any | None = None,
         landmarker_factory: Callable[[], Any] | None = None,
         check_interval_seconds: float = config.FACE_TRACK_INTERVAL_SECONDS,
+        mirror_coordinates: bool = True,
     ) -> None:
         self.landmarker = landmarker
         self.landmarker_factory = landmarker_factory
         self.check_interval_seconds = check_interval_seconds
+        self.mirror_coordinates = mirror_coordinates
         self.baseline_mouth_landmarks: MouthLandmarks | None = None
         self.last_raw_mouth_landmarks: MouthLandmarks = ()
         self._last_checked_at: float | None = None
@@ -113,10 +115,10 @@ class FaceTracker:
             return ()
 
         try:
-            left_corner = self._point(landmarks[LEFT_MOUTH_CORNER])
-            right_corner = self._point(landmarks[RIGHT_MOUTH_CORNER])
-            upper_lip = self._point(landmarks[UPPER_LIP])
-            lower_lip = self._point(landmarks[LOWER_LIP])
+            left_corner = self._to_output_point(landmarks[LEFT_MOUTH_CORNER])
+            right_corner = self._to_output_point(landmarks[RIGHT_MOUTH_CORNER])
+            upper_lip = self._to_output_point(landmarks[UPPER_LIP])
+            lower_lip = self._to_output_point(landmarks[LOWER_LIP])
         except (IndexError, TypeError, AttributeError):
             self.last_raw_mouth_landmarks = ()
             return ()
@@ -192,6 +194,12 @@ class FaceTracker:
         if hasattr(landmark, "x") and hasattr(landmark, "y"):
             return (float(landmark.x), float(landmark.y))
         return (float(landmark[0]), float(landmark[1]))
+
+    def _to_output_point(self, landmark) -> MouthLandmark:
+        point = self._point(landmark)
+        if not self.mirror_coordinates:
+            return point
+        return (round(1.0 - point[0], 4), point[1])
 
     def _normalize(
         self,

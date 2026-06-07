@@ -56,6 +56,27 @@ def test_track_extracts_normalized_mouth_landmarks():
 
     assert result.face_detected is True
     assert tracker.last_raw_mouth_landmarks == (
+        (0.6, 0.5),
+        (0.4, 0.5),
+        (0.5, 0.45),
+        (0.5, 0.55),
+    )
+    assert result.mouth_landmarks == (
+        (0.5, 0.0),
+        (-0.5, 0.0),
+        (0.0, -0.25),
+        (0.0, 0.25),
+    )
+
+
+def test_track_can_keep_original_mediapipe_coordinates():
+    landmarker = FakeLandmarker([make_face_landmarks()])
+    tracker = FaceTracker(landmarker=landmarker, mirror_coordinates=False)
+
+    result = tracker.track(frame=object(), now=1.0)
+
+    assert result.face_detected is True
+    assert tracker.last_raw_mouth_landmarks == (
         (0.4, 0.5),
         (0.6, 0.5),
         (0.5, 0.45),
