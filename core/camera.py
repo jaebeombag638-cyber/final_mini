@@ -19,12 +19,12 @@ class Camera:
     def __init__(
         self,
         camera_index: int = config.CAMERA_INDEX,
-        flip_horizontal: bool = True,
+        mirror_display: bool = True,
         capture_factory: Callable[[int], Any] | None = None,
         fallback_size: tuple[int, int] = (640, 480),
     ) -> None:
         self.camera_index = camera_index
-        self.flip_horizontal = flip_horizontal
+        self.mirror_display = mirror_display
         self.capture_factory = capture_factory
         self.fallback_size = fallback_size
         self._capture = None
@@ -46,14 +46,13 @@ class Camera:
         if not success or frame is None:
             return CameraFrame(self._create_fallback_frame(), is_fallback=True)
 
-        if self.flip_horizontal:
-            frame = self._flip_frame(frame)
-
         return CameraFrame(frame)
 
     def to_surface(self, bgr_frame, pygame_module=None):
         pygame = pygame_module or self._import_pygame()
         rgb_frame = self._convert_bgr_to_rgb(bgr_frame)
+        if self.mirror_display:
+            rgb_frame = self._mirror_frame_horizontally(rgb_frame)
         if hasattr(rgb_frame, "swapaxes"):
             rgb_frame = rgb_frame.swapaxes(0, 1)
         return pygame.surfarray.make_surface(rgb_frame)
@@ -81,12 +80,6 @@ class Camera:
         frame[:, :] = (40, 40, 40)
         return frame
 
-    def _flip_frame(self, frame):
-        try:
-            return frame[:, ::-1]
-        except TypeError:
-            return [list(reversed(row)) for row in frame]
-
     def _convert_bgr_to_rgb(self, bgr_frame):
         try:
             return bgr_frame[:, :, ::-1]
@@ -95,6 +88,12 @@ class Camera:
                 [[pixel[2], pixel[1], pixel[0]] for pixel in row]
                 for row in bgr_frame
             ]
+
+    def _mirror_frame_horizontally(self, frame):
+        try:
+            return frame[:, ::-1]
+        except TypeError:
+            return [list(reversed(row)) for row in frame]
 
     def _import_cv2(self):
         import cv2

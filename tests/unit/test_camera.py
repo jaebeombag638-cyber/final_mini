@@ -33,7 +33,7 @@ def test_open_uses_capture_factory_and_reports_open_state():
     assert created_indexes == [2]
 
 
-def test_read_frame_flips_frame_horizontally_by_default():
+def test_read_frame_keeps_original_frame_direction():
     frame = [
         [[1, 0, 0], [2, 0, 0]],
         [[3, 0, 0], [4, 0, 0]],
@@ -44,22 +44,6 @@ def test_read_frame_flips_frame_horizontally_by_default():
     camera_frame = camera.read_frame()
 
     assert camera_frame.is_fallback is False
-    assert camera_frame.image == [
-        [[2, 0, 0], [1, 0, 0]],
-        [[4, 0, 0], [3, 0, 0]],
-    ]
-
-
-def test_read_frame_can_skip_horizontal_flip():
-    frame = [[[1, 0, 0], [2, 0, 0]]]
-    camera = Camera(
-        flip_horizontal=False,
-        capture_factory=lambda camera_index: FakeCapture(frame=frame),
-    )
-    camera.open()
-
-    camera_frame = camera.read_frame()
-
     assert camera_frame.image == frame
 
 
@@ -85,9 +69,9 @@ def test_release_closes_capture_once():
     assert camera.is_opened is False
 
 
-def test_to_surface_converts_bgr_frame_to_pygame_surface(monkeypatch):
+def test_to_surface_converts_bgr_frame_to_mirrored_pygame_surface(monkeypatch):
     converted = {}
-    frame = [[[10, 20, 30]]]
+    frame = [[[10, 20, 30], [40, 50, 60]]]
 
     class FakeSurfArray:
         @staticmethod
@@ -103,4 +87,25 @@ def test_to_surface_converts_bgr_frame_to_pygame_surface(monkeypatch):
     surface = camera.to_surface(frame, pygame_module=FakePygame)
 
     assert surface == "surface"
-    assert converted["rgb_image"] == [[[30, 20, 10]]]
+    assert converted["rgb_image"] == [[[60, 50, 40], [30, 20, 10]]]
+
+
+def test_to_surface_can_skip_mirror_display(monkeypatch):
+    converted = {}
+    frame = [[[10, 20, 30], [40, 50, 60]]]
+
+    class FakeSurfArray:
+        @staticmethod
+        def make_surface(rgb_image):
+            converted["rgb_image"] = rgb_image
+            return "surface"
+
+    class FakePygame:
+        surfarray = FakeSurfArray()
+
+    camera = Camera(mirror_display=False)
+
+    surface = camera.to_surface(frame, pygame_module=FakePygame)
+
+    assert surface == "surface"
+    assert converted["rgb_image"] == [[[30, 20, 10], [60, 50, 40]]]
