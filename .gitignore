@@ -30,6 +30,8 @@ docs/
 *.tmp
 tmp/
 temp/
+.runtime/
+Ultralytics/
 
 # Media/model artifacts
 *.pt

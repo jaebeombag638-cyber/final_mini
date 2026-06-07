@@ -13,7 +13,7 @@ FACE_LANDMARKER_MODEL_PATH = "assets/models/face_landmarker.task"
 
 AUDIO_LIMIT_DB = 65.0
 
-YOLO_MODEL_NAME = "yolov8n.pt"
+YOLO_MODEL_NAME = "assets/models/yolov8n.pt"
 YOLO_DETECT_EVERY_N_FRAMES = 5
 
 WHISPER_MODEL_NAME = "tiny"
