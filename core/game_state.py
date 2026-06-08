@@ -62,3 +62,19 @@ class GameState:
     def mark_stage_failed(self, stage: int) -> None:
         self.current_stage = stage
         self.stage_results[stage] = "failed"
+
+    # 재시작 처리
+    def reset_for_restart(self) -> None:
+        self.current_scene = "start"
+        self.baseline_mouth_landmarks = None
+        self.current_mouth_landmarks = ()
+        self.current_audio_db = 0.0
+        self.current_stage = 0
+        self.is_game_over = False
+        self.reached_ending = False
+        self.game_over_reason = None
+        self.stage_results = {
+            1: "pending",
+            2: "pending",
+            3: "pending",
+        }

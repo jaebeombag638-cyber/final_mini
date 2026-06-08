@@ -71,3 +71,30 @@ def test_game_state_updates_shared_scene_data():
     assert game_state.baseline_mouth_landmarks == baseline_landmarks
     assert game_state.current_mouth_landmarks == current_landmarks
     assert game_state.current_audio_db == 42.5
+
+
+def test_game_state_resets_for_restart():
+    game_state = GameState(current_scene="game_over")
+    game_state.enter_game_over("sound_limit")
+    game_state.mark_stage_failed(2)
+    game_state.update_mouth_landmarks(
+        baseline=((0.0, 0.0),),
+        current=((1.0, 1.0),),
+    )
+    game_state.update_audio_db(80.0)
+
+    game_state.reset_for_restart()
+
+    assert game_state.current_scene == "start"
+    assert game_state.baseline_mouth_landmarks is None
+    assert game_state.current_mouth_landmarks == ()
+    assert game_state.current_audio_db == 0.0
+    assert game_state.current_stage == 0
+    assert game_state.is_game_over is False
+    assert game_state.reached_ending is False
+    assert game_state.game_over_reason is None
+    assert game_state.stage_results == {
+        1: "pending",
+        2: "pending",
+        3: "pending",
+    }
