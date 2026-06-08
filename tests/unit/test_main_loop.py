@@ -15,6 +15,7 @@ from core.speech import SpeechRecognizer
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
 from scenes.intro import IntroScene
+from scenes.rules_guide import RulesGuideScene
 from scenes.stage1 import Stage1Scene
 from scenes.stage2 import Stage2Scene
 from scenes.stage3 import Stage3Scene
@@ -56,6 +57,7 @@ def test_create_scenes_registers_all_scene_names():
     assert scenes.keys() == {
         "start",
         "intro",
+        "rules_guide",
         "stage1",
         "stage2",
         "stage3",
@@ -64,6 +66,7 @@ def test_create_scenes_registers_all_scene_names():
     }
     assert isinstance(scenes["start"], StartPageScene)
     assert isinstance(scenes["intro"], IntroScene)
+    assert isinstance(scenes["rules_guide"], RulesGuideScene)
     assert isinstance(scenes["stage1"], Stage1Scene)
     assert isinstance(scenes["stage2"], Stage2Scene)
     assert isinstance(scenes["stage3"], Stage3Scene)

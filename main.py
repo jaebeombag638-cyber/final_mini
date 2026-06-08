@@ -9,6 +9,7 @@ from core.speech import SpeechRecognizer
 from scenes.ending import EndingScene
 from scenes.game_over import GameOverScene
 from scenes.intro import IntroScene
+from scenes.rules_guide import RulesGuideScene
 from scenes.stage1 import Stage1Scene
 from scenes.stage2 import Stage2Scene
 from scenes.stage3 import Stage3Scene
@@ -46,6 +47,7 @@ def create_scenes() -> dict[str, object]:
     return {
         "start": StartPageScene(),
         "intro": IntroScene(),
+        "rules_guide": RulesGuideScene(),
         "stage1": Stage1Scene(),
         "stage2": Stage2Scene(),
         "stage3": Stage3Scene(),

@@ -4,6 +4,7 @@ import pygame
 
 from scenes.ending import EndingScene
 from scenes.intro import IntroScene
+from scenes.rules_guide import RulesGuideScene
 from scenes.stage1 import Stage1Scene
 from scenes.stage2 import Stage2Scene
 from scenes.stage3 import Stage3Scene
@@ -18,6 +19,7 @@ def test_space_key_moves_through_temporary_scene_flow():
     scenes_with_next_scene = [
         (StartPageScene(), "intro"),
         (IntroScene(), "stage1"),
+        (RulesGuideScene(), "stage1"),
         (Stage3Scene(), "ending"),
     ]
 
@@ -40,6 +42,7 @@ def test_escape_key_requests_quit_from_temporary_scenes():
     scenes = [
         StartPageScene(),
         IntroScene(),
+        RulesGuideScene(),
         Stage1Scene(),
         Stage2Scene(),
         Stage3Scene(),
