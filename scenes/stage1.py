@@ -2,6 +2,7 @@ import pygame
 
 import config
 from core.scene import Scene
+from scenes.global_rules import apply_global_rules
 
 
 class Stage1Scene(Scene):
@@ -17,6 +18,9 @@ class Stage1Scene(Scene):
 
     def update(self, dt, game_state, services) -> str | None:
         self._elapsed += dt
+        transition = apply_global_rules(dt, self._elapsed, game_state, services)
+        if transition is not None:
+            return transition
         if self._elapsed >= config.STAGE_TRANSITION_SECONDS:
             return "stage2"
         return None

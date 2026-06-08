@@ -2,9 +2,13 @@ import pygame
 
 import config
 from core.scene import Scene
+from scenes.global_rules import apply_global_rules
 
 
 class Stage3Scene(Scene):
+    def __init__(self) -> None:
+        self._elapsed: float = 0.0
+
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             return "ending"
@@ -13,6 +17,10 @@ class Stage3Scene(Scene):
         return None
 
     def update(self, dt, game_state, services) -> str | None:
+        self._elapsed += dt
+        transition = apply_global_rules(dt, self._elapsed, game_state, services)
+        if transition is not None:
+            return transition
         return None
 
     def draw(self, screen, game_state, services) -> None:
