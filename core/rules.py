@@ -5,9 +5,9 @@ import config
 from core.game_state import GameState, MouthLandmarks
 
 
-SOUND_LIMIT_REASON = "sound_limit"        # 큰 소리
-MOUTH_MOVEMENT_REASON = "mouth_movement"  # 입 움직임
-FACE_MISSING_REASON = "face_missing"      # 카메라에 얼굴 안 보임
+SOUND_LIMIT_REASON = "그들이 당신의 존재를 눈치채고 말았군요. 이를 어쩐다..."    # 큰 소리
+MOUTH_MOVEMENT_REASON = "이런, 잡아먹혔네요. 반가워요, 새로운 플레이어님!"      # 입 움직임
+FACE_MISSING_REASON = "결계가 붕괴되었습니다. 너무 고통스럽진 않길 빌어요."      # 카메라에 얼굴 안 보임
 
 # frozen=True : 한 번 만들어진 뒤 값 바뀌지 않음
 @dataclass(frozen=True)

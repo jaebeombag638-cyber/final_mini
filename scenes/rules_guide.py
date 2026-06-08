@@ -31,16 +31,16 @@ class RulesGuideScene(Scene):
         rule_font = pygame.font.Font(config.FONT_PATH, 38)
         hint_font = pygame.font.Font(config.FONT_PATH, 30)
 
-        title = title_font.render("게임 중 지켜야 할 규칙", True, _TITLE_COLOR)
+        title = title_font.render("생존을 위한 경고", True, _TITLE_COLOR)
         screen.blit(
             title,
             title.get_rect(center=(config.SCREEN_WIDTH // 2, 140)),
         )
 
         rules = (
-            "소리를 크게 내지 마세요.",
-            "얼굴이 화면 밖으로 벗어나면 안 됩니다.",
-            "입을 움직이지 말고 기준 표정을 유지하세요.",
+            "소리를 내지 마세요. 그들은 숨소리조차 들을 수 있습니다.",
+            "표정을 유지하세요. 두려움을 드러내는 순간 그들은 당신의 육체를 탐내기 시작합니다.",
+            "시선을 돌리지 마세요. 얼굴이 화면 밖으로 벗어나면 결계가 무너집니다.",
         )
         for index, text in enumerate(rules):
             rule = rule_font.render(text, True, _RULE_COLOR)
