@@ -83,4 +83,5 @@ class GameOverScene(Scene):
 
     def _restart(self, game_state) -> str:
         game_state.reset_for_restart()
-        return "start"
+        game_state.change_scene("stage1")
+        return "stage1"

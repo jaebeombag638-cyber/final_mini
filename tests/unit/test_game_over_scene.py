@@ -14,7 +14,7 @@ def keydown_event(key: int) -> SimpleNamespace:
     return SimpleNamespace(type=pygame.KEYDOWN, key=key)
 
 
-def test_restart_button_click_resets_game_and_moves_to_start():
+def test_restart_button_click_resets_game_and_moves_to_stage1():
     scene = GameOverScene()
     game_state = GameState(current_scene="game_over")
     game_state.enter_game_over("sound_limit")
@@ -24,8 +24,8 @@ def test_restart_button_click_resets_game_and_moves_to_start():
         game_state,
     )
 
-    assert transition == "start"
-    assert game_state.current_scene == "start"
+    assert transition == "stage1"
+    assert game_state.current_scene == "stage1"
     assert game_state.is_game_over is False
     assert game_state.game_over_reason is None
 
@@ -37,7 +37,7 @@ def test_enter_key_restarts_game_over_scene():
 
     transition = scene.handle_event(keydown_event(pygame.K_RETURN), game_state)
 
-    assert transition == "start"
+    assert transition == "stage1"
     assert game_state.is_game_over is False
 
 
