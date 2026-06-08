@@ -16,6 +16,9 @@ class Stage2Scene(Scene):
         return None
 
     def update(self, dt, game_state, services) -> str | None:
+        self._elapsed += dt
+        if self._elapsed >= config.STAGE_TRANSITION_SECONDS:
+            return "stage3"
         return None
 
     def draw(self, screen, game_state, services) -> None:
