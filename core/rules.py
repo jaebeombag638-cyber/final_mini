@@ -5,11 +5,11 @@ import config
 from core.game_state import GameState, MouthLandmarks
 
 
-SOUND_LIMIT_REASON = "sound_limit"
-MOUTH_MOVEMENT_REASON = "mouth_movement"
-FACE_MISSING_REASON = "face_missing"
+SOUND_LIMIT_REASON = "sound_limit"        # 큰 소리
+MOUTH_MOVEMENT_REASON = "mouth_movement"  # 입 움직임
+FACE_MISSING_REASON = "face_missing"      # 카메라에 얼굴 안 보임
 
-
+# frozen=True : 한 번 만들어진 뒤 값 바뀌지 않음
 @dataclass(frozen=True)
 class RuleEvaluation:
     """글로벌 규칙 평가 결과."""
@@ -23,10 +23,10 @@ class GlobalRules:
 
     def __init__(
         self,
-        mouth_tolerance_ratio: float = config.MOUTH_LANDMARK_TOLERANCE_RATIO,
-        mouth_fail_seconds: float = config.MOUTH_LANDMARK_FAIL_SECONDS,
-        face_missing_fail_seconds: float = config.FACE_MISSING_FAIL_SECONDS,
-        audio_limit_db: float = config.AUDIO_LIMIT_DB,
+        mouth_tolerance_ratio: float = config.MOUTH_LANDMARK_TOLERANCE_RATIO,    # 입 움직였다고 판단할 기준
+        mouth_fail_seconds: float = config.MOUTH_LANDMARK_FAIL_SECONDS,          # 입 움직임이 몇 초 이상 지속되면 규칙 위반인지
+        face_missing_fail_seconds: float = config.FACE_MISSING_FAIL_SECONDS,     # 얼굴 몇 초 이상 안 보이면 규칙 위반인지
+        audio_limit_db: float = config.AUDIO_LIMIT_DB,                           # 소리 몇 db 이상이면 규칙 위반인지
     ) -> None:
         self.mouth_tolerance_ratio = mouth_tolerance_ratio
         self.mouth_fail_seconds = mouth_fail_seconds
@@ -35,6 +35,8 @@ class GlobalRules:
         self._mouth_violation_seconds = 0.0
         self._face_missing_seconds = 0.0
 
+    # 실제 규칙 검사 함수
+    # 1. 소리 크기 검사 -> 2. 얼굴 보이는지 검사 -> 3. 입 움직임 검사
     def evaluate(
         self,
         dt: float,
@@ -44,13 +46,17 @@ class GlobalRules:
         audio_db: float,
         audio_is_fallback: bool = False,
     ) -> RuleEvaluation:
+        
+        # 1. 소리 크기 검사
         if not audio_is_fallback and audio_db >= self.audio_limit_db:
             return RuleEvaluation(violated=True, reason=SOUND_LIMIT_REASON)
 
+        # 2. 얼굴 보이는지 검사
         face_result = self._evaluate_face_missing(dt, face_detected)
         if face_result.violated:
             return face_result
 
+        # 3. 입 움직임 검사
         mouth_result = self._evaluate_mouth_movement(
             dt,
             baseline_mouth_landmarks,
@@ -61,6 +67,7 @@ class GlobalRules:
 
         return RuleEvaluation(violated=False)
 
+    # evaluate() 실행 후 규칙 위반이 있으면 상태를 "game_over"로 변환
     def apply_to_game_state(
         self,
         dt: float,
@@ -82,10 +89,12 @@ class GlobalRules:
         game_state.enter_game_over(result.reason)
         return "game_over"
 
+    # 누적 시간 초기화 (게임 재시작시 호출)
     def reset(self) -> None:
         self._mouth_violation_seconds = 0.0
         self._face_missing_seconds = 0.0
 
+    # 카메라에 얼굴 보이는지 검사
     def _evaluate_face_missing(self, dt: float, face_detected: bool) -> RuleEvaluation:
         if face_detected:
             self._face_missing_seconds = 0.0
@@ -99,12 +108,15 @@ class GlobalRules:
             else None,
         )
 
+    # 입 움직임 검사
     def _evaluate_mouth_movement(
         self,
         dt: float,
         baseline_mouth_landmarks: MouthLandmarks | None,
         current_mouth_landmarks: MouthLandmarks,
     ) -> RuleEvaluation:
+        
+        # 입 좌표 비교 가능한지 확인
         if not self._has_comparable_mouth_landmarks(
             baseline_mouth_landmarks,
             current_mouth_landmarks,
@@ -112,9 +124,10 @@ class GlobalRules:
             self._mouth_violation_seconds = 0.0
             return RuleEvaluation(violated=False)
 
+        # 입 움직임이 있었으면 움직인 시간 누적
         if self._is_mouth_moved(baseline_mouth_landmarks, current_mouth_landmarks):
             self._mouth_violation_seconds += dt
-        else:
+        else: # 없었으면 0초로 초기화
             self._mouth_violation_seconds = 0.0
 
         return RuleEvaluation(
@@ -124,6 +137,7 @@ class GlobalRules:
             else None,
         )
 
+    # 기준 입 좌표와 현재 입 좌표가 비교 가능한지 확인
     def _has_comparable_mouth_landmarks(
         self,
         baseline_mouth_landmarks: MouthLandmarks | None,
@@ -135,6 +149,9 @@ class GlobalRules:
             and len(current_mouth_landmarks) > 0
         )
 
+    # 각 입 좌표 이동거리 계산
+    # dist(baseline, current) : 두 점 사이 거리
+    # 하나라도 허용 범위를 넘으면 움직였다고 판단
     def _is_mouth_moved(
         self,
         baseline_mouth_landmarks: MouthLandmarks,

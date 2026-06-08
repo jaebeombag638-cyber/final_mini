@@ -1,5 +1,6 @@
 from core.game_state import GameState
 
+"""실제 센서 값을 가져와서 `rules.py`에 넘기는 중간 연결 파일"""
 
 def apply_global_rules(
     dt: float,
@@ -7,29 +8,33 @@ def apply_global_rules(
     game_state: GameState,
     services: dict[str, object],
 ) -> str | None:
+    
+    # services 딕셔너리(`main.py`에서 생성)에서 "rules" 값 가져오기
     rules = services.get("rules")
     if rules is None:
         return None
 
     face_detected = True
     audio_is_fallback = False
-    frame = _read_camera_frame(services)
+    frame = _read_camera_frame(services)  # 카메라에서 현재 프레임 기져오기
 
-    audio_level = _read_audio_level(services)
+    audio_level = _read_audio_level(services)  # 마이크에서 현재 소리 크기 가져오기
     if audio_level is not None:
         game_state.update_audio_db(audio_level.db)
         audio_is_fallback = audio_level.is_fallback
 
+    # 카메라 프레임으로부터 얼굴, 입 좌표(양쪽 입꼬리, 위아래 입술) 추적    
     face_result = _track_face(services, frame, now)
     if face_result is not None:
         face_tracker = services.get("face_tracker")
-        baseline = getattr(face_tracker, "baseline_mouth_landmarks", None)
+        baseline = getattr(face_tracker, "baseline_mouth_landmarks", None)  # face_tracker 안에 저장된 기준 입 좌표 가져오기
         game_state.update_mouth_landmarks(
             baseline=baseline or game_state.baseline_mouth_landmarks,
             current=face_result.mouth_landmarks,
         )
         face_detected = face_result.face_detected
-
+    
+    # `rules.py`로 넘김
     return rules.apply_to_game_state(
         dt=dt,
         game_state=game_state,
