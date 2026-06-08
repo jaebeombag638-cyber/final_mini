@@ -9,7 +9,7 @@ from core.scene import Scene
 
 _FAKE_BOX_COUNT_MIN = 3  # 가짜 박스 최소 개수
 _FAKE_BOX_COUNT_MAX = 6  # 가짜 박스 최대 개수
-_WIGGLE_AMP_MIN = 3.0  # 가짜 박스 흔들림 최소 진폭
+_WIGGLE_AMP_MIN = 5.0  # 가짜 박스 흔들림 최소 진폭
 _WIGGLE_AMP_MAX = 10.0  # 가짜 박스 흔들림 최대 진폭
 _FAKE_BOX_PLAYER_MARGIN = int(_WIGGLE_AMP_MAX) + 10
 _INTRO_DURATION = 10.0
@@ -23,23 +23,29 @@ _BOX_THICKNESS = 2
 def _make_fake_boxes(count: int, player_rect: pygame.Rect) -> list[dict]:
     """사람 박스와 겹치지 않는 가짜 감지 박스를 생성한다."""
     rng = random.Random()
+
+    # inflate() : 사각형 크기 키우는 함수
+    # 실제 사람 박스보다 넓은 영역을 만들어서 그 안에 가짜 박스가 생기지 않게 함
     player_exclusion = player_rect.inflate(
         _FAKE_BOX_PLAYER_MARGIN * 2,
         _FAKE_BOX_PLAYER_MARGIN * 2,
     )
-    strip_width = config.SCREEN_WIDTH // count
-    max_box_width = min(200, strip_width - 20)
+
+    strip_width = config.SCREEN_WIDTH // count   # 화면 세로 구역 나누기 (골고루 배치되도록)
+    max_box_width = min(200, strip_width - 20)   # 가짜 박스 크기 정하기
 
     boxes = []
     for index in range(count):
         x_min = index * strip_width
         x_max = (index + 1) * strip_width
 
-        for _ in range(200):
+        for _ in range(200):   # 최대 200번까지 랜덤 위치 시도
             width = rng.randint(min(80, max_box_width), max_box_width)
             height = rng.randint(80, 200)
             x = rng.randint(x_min, max(x_min, x_max - width))
             y = rng.randint(0, max(0, config.SCREEN_HEIGHT - height))
+
+            # 후보 박스 만들어서 사람 박스와 겹치지 않으면 그 위치 사용
             candidate = pygame.Rect(x, y, width, height)
             if not candidate.colliderect(player_exclusion):
                 break
@@ -128,11 +134,14 @@ class IntroScene(Scene):
                 pygame.Rect(*self._player_box),
             )
 
+    # detector가 반환한 바운딩 박스를 화면 좌표로 변환
     def _scale_mirrored_bbox(self, bbox: tuple[int, int, int, int], frame) -> tuple[int, int, int, int]:
         x1, y1, x2, y2 = bbox
         frame_width, frame_height = self._get_frame_size(frame)
         scale_x = config.SCREEN_WIDTH / frame_width
         scale_y = config.SCREEN_HEIGHT / frame_height
+
+        # 좌우반전 적용
         return (
             int((frame_width - x2) * scale_x),
             int(y1 * scale_y),
@@ -149,12 +158,16 @@ class IntroScene(Scene):
 
         return max(frame_width, 1), max(frame_height, 1)
 
+    # 박스 그리기
     def _draw_detection_boxes(self, screen: pygame.Surface) -> None:
+        # 가짜 박스 그리기
         for box in self._fake_boxes:
+            # sin() 이용해서 박스가 상하/좌우로 흔들리도록
             dx = int(box["ax"] * math.sin(self._elapsed * box["fx"] + box["px"]))
             dy = int(box["ay"] * math.sin(self._elapsed * box["fy"] + box["py"]))
             rect = pygame.Rect(box["bx"] + dx, box["by"] + dy, box["w"], box["h"])
             pygame.draw.rect(screen, _COLOR_FAKE, rect, _BOX_THICKNESS)
 
+        # 사람 박스 그리기
         if self._player_box is not None:
             pygame.draw.rect(screen, _COLOR_MAIN, pygame.Rect(*self._player_box), _BOX_THICKNESS)

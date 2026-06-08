@@ -4,7 +4,7 @@ import config
 from core.scene import Scene
 
 _MOUTH_OPEN_RATIO = 0.35  # 입 높이/너비 비율이 이 값 초과 시 입 열림으로 판정
-_DETECTION_DELAY = 3.0  # 창 표시 후 입 감지 시작까지 대기 시간(초)
+_DETECTION_DELAY = 2.0  # 창 표시 후 입 감지 시작까지 대기 시간(초)
 _BACKGROUND_COLOR = (20, 20, 20)
 _OVERLAY_COLOR = (0, 0, 0, 120)
 _TITLE_COLOR = (255, 255, 255)
