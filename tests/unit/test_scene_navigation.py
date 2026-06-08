@@ -18,7 +18,7 @@ def keydown_event(key: int) -> SimpleNamespace:
 def test_space_key_moves_through_temporary_scene_flow():
     scenes_with_next_scene = [
         (StartPageScene(), "intro"),
-        (IntroScene(), "stage1"),
+        (IntroScene(), "rules_guide"),
         (RulesGuideScene(), "stage1"),
         (Stage3Scene(), "ending"),
     ]

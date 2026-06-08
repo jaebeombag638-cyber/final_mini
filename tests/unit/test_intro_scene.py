@@ -58,9 +58,9 @@ def test_intro_scene_uses_yolo_person_bbox_for_player_box():
     assert scene._player_box == (1060, 30, 200, 300)
 
 
-def test_intro_scene_moves_to_stage1_after_duration():
+def test_intro_scene_moves_to_rules_guide_after_duration():
     scene = IntroScene()
 
     transition = scene.update(dt=10.0, game_state=object(), services={})
 
-    assert transition == "stage1"
+    assert transition == "rules_guide"
