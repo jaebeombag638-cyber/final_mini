@@ -68,6 +68,7 @@ class Stage3Scene(Scene):
         detection_result = detector.detect(
             camera_frame.image,
             self.frame_index,
+            use_cache=False,
         )
 
         detected_bbox = detector.get_player_bbox(

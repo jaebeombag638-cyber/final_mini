@@ -44,8 +44,13 @@ class Detector:
         self._last_result: DetectionResult | None = None
         self._load_error_message: str | None = None
 
-    def detect(self, frame, frame_index: int) -> DetectionResult:
-        if self._should_use_cache(frame_index):
+    def detect(
+        self,
+        frame,
+        frame_index: int,
+        use_cache: bool = True,
+    ) -> DetectionResult:
+        if use_cache and self._should_use_cache(frame_index):
             return self._last_result
 
         model = self._get_model()
