@@ -4,21 +4,24 @@ import config
 from core.scene import Scene
 
 _MOUTH_OPEN_RATIO = 0.35  # 입 높이/너비 비율이 이 값 초과 시 입 열림으로 판정
-_DETECTION_DELAY = 2.0  # 창 표시 후 입 감지 시작까지 대기 시간(초)
+_DETECTION_DELAY = 3.0  # 창 표시 후 입 감지 시작까지 대기 시간(초)
 _BACKGROUND_COLOR = (20, 20, 20)
 _OVERLAY_COLOR = (0, 0, 0, 120)
 _TITLE_COLOR = (255, 255, 255)
 _HINT_COLOR = (200, 200, 200)
+
+
 class StartPageScene(Scene):
     def __init__(self) -> None:
         self._last_frame = None
         self._elapsed: float = 0.0
 
     def handle_event(self, event, game_state) -> str | None:
-        if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            return "intro"
-        if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            return "quit"
+        if getattr(event, "type", None) == pygame.KEYDOWN: 
+            if event.key == pygame.K_SPACE:
+                return "intro"
+            if event.key == pygame.K_ESCAPE:
+                return "quit"
         return None
 
     def update(self, dt, game_state, services) -> str | None:
@@ -61,10 +64,9 @@ class StartPageScene(Scene):
         if len(mouth_landmarks) < 4:
             return False
 
-        left_corner, right_corner, upper_lip, lower_lip = mouth_landmarks[:4]
-        mouth_width = abs(right_corner[0] - left_corner[0])
+        _, _, upper_lip, lower_lip = mouth_landmarks
         mouth_height = abs(lower_lip[1] - upper_lip[1])
-        return mouth_width > 0 and mouth_height / mouth_width > _MOUTH_OPEN_RATIO
+        return mouth_height > _MOUTH_OPEN_RATIO
 
     def _draw_overlay(self, screen: pygame.Surface) -> None:
         overlay = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.SRCALPHA)

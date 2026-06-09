@@ -9,7 +9,7 @@ from core.scene import Scene
 
 _FAKE_BOX_COUNT_MIN = 3  # 가짜 박스 최소 개수
 _FAKE_BOX_COUNT_MAX = 6  # 가짜 박스 최대 개수
-_WIGGLE_AMP_MIN = 5.0  # 가짜 박스 흔들림 최소 진폭
+_WIGGLE_AMP_MIN = 3.0  # 가짜 박스 흔들림 최소 진폭
 _WIGGLE_AMP_MAX = 10.0  # 가짜 박스 흔들림 최대 진폭
 _FAKE_BOX_PLAYER_MARGIN = int(_WIGGLE_AMP_MAX) + 10
 _INTRO_DURATION = 10.0
@@ -74,12 +74,12 @@ class IntroScene(Scene):
         self._elapsed: float = 0.0
         self._frame_index: int = 0
         self._player_box: tuple[int, int, int, int] | None = None
-        self._fake_box_count = random.randint(_FAKE_BOX_COUNT_MIN, _FAKE_BOX_COUNT_MAX)
+        self._fake_box_count : int = random.randint(_FAKE_BOX_COUNT_MIN, _FAKE_BOX_COUNT_MAX)
         self._fake_boxes: list[dict] = []
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            return "rules_guide"
+            return "stage1"
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return "quit"
         return None
@@ -87,7 +87,7 @@ class IntroScene(Scene):
     def update(self, dt, game_state, services) -> str | None:
         self._elapsed += dt
         if self._elapsed >= _INTRO_DURATION:
-            return "rules_guide"
+            return "stage1"
 
         camera = services.get("camera")
         detector = services.get("detector")
@@ -96,10 +96,10 @@ class IntroScene(Scene):
 
         camera.open()
         camera_frame = camera.read_frame()
-        self._last_frame = camera_frame.image
         self._frame_index += 1
-
-        if camera_frame.is_fallback:
+        if not camera_frame.is_fallback:
+            self._last_frame = camera_frame.image
+        else:
             return None
 
         detection_result = detector.detect(camera_frame.image, self._frame_index)
