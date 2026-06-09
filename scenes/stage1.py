@@ -82,6 +82,10 @@ class Stage1Scene(Scene):
         self._ghost_img = None
         self._ghost_loaded: bool = False
 
+    def reset(self) -> None:
+        """장면 재진입 시 처음부터 다시 시작한다."""
+        self._reset()
+
     def _update_last_frame(self, camera) -> None:
         if camera is None:
             return
