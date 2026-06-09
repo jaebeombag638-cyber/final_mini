@@ -15,6 +15,21 @@ class FakeSpeech:
         return self.results.pop(0)
 
 
+class FakeRules:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def apply_to_game_state(
+        self,
+        dt: float,
+        game_state: GameState,
+        face_detected: bool,
+        audio_is_fallback: bool = False,
+    ) -> str | None:
+        self.calls.append((dt, game_state, face_detected, audio_is_fallback))
+        return None
+
+
 def silent_result(target_text: str) -> SpeechRecognitionResult:
     return SpeechRecognitionResult(
         target_text=target_text,
@@ -59,17 +74,44 @@ def test_stage2_moves_to_stage3_only_when_no_speech_is_recognized():
     assert game_state.stage_results[2] == "clear"
 
 
-def test_stage2_enters_game_over_when_any_speech_is_recognized():
-    speech = FakeSpeech([spoken_result("나 여기 있어")])
+def test_stage2_enters_game_over_after_all_prompts_when_any_speech_is_recognized():
+    speech = FakeSpeech(
+        [
+            spoken_result("나 여기 있어"),
+            silent_result("내가 보이지 않니"),
+            silent_result("살고 싶다면 지금 당장 소리 내어 읽으세요"),
+        ]
+    )
     scene = Stage2Scene()
     game_state = GameState(current_scene="stage2")
+    services = {"speech": speech}
 
-    first_transition = scene.update(scene.intro_duration, game_state, {"speech": speech})
-    transition = scene.update(0.1, game_state, {"speech": speech})
+    assert scene.update(scene.intro_duration, game_state, services) is None
+    assert scene.update(0.1, game_state, services) is None
+    assert scene.update(0.1, game_state, services) is None
+    transition = scene.update(0.1, game_state, services)
 
-    assert first_transition is None
     assert transition == "game_over"
     assert game_state.is_game_over is True
     assert game_state.game_over_reason == SOUND_LIMIT_REASON
-    assert scene.user_spoken_text == "나 여기 있어"
-    assert scene.match_ratio_percent == 100.0
+
+
+def test_stage2_does_not_apply_global_rules_while_prompts_are_active():
+    speech = FakeSpeech(
+        [
+            silent_result("나 여기 있어"),
+            silent_result("내가 보이지 않니"),
+            silent_result("살고 싶다면 지금 당장 소리 내어 읽으세요"),
+        ]
+    )
+    rules = FakeRules()
+    scene = Stage2Scene()
+    game_state = GameState(current_scene="stage2")
+    services = {"speech": speech, "rules": rules}
+
+    assert scene.update(scene.intro_duration, game_state, services) is None
+    assert scene.update(0.1, game_state, services) is None
+    assert scene.update(0.1, game_state, services) is None
+    assert scene.update(0.1, game_state, services) == "stage3"
+
+    assert len(rules.calls) == 1

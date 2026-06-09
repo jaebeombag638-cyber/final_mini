@@ -28,6 +28,7 @@ class Stage2Scene(Scene):
         self.audio_status: str = "RECORDING"
         self.user_spoken_text: str = ""
         self.match_ratio_percent: float = 0.0
+        self._has_spoken: bool = False
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -36,9 +37,11 @@ class Stage2Scene(Scene):
 
     def update(self, dt, game_state, services) -> str | None:
         self._elapsed += dt
-        transition = apply_global_rules(dt, self._elapsed, game_state, services)
-        if transition is not None:
-            return transition
+
+        if not self.intro_done:
+            transition = apply_global_rules(dt, self._elapsed, game_state, services)
+            if transition is not None:
+                return transition
 
         if self._elapsed < self.intro_duration:
             return None
@@ -64,12 +67,14 @@ class Stage2Scene(Scene):
         self.match_ratio_percent = round(result.similarity * 100.0, 1)
 
         if self.user_spoken_text != "(판독 불가)":
-            game_state.enter_game_over(SOUND_LIMIT_REASON)
-            self.audio_status = "FAILED_MATCH"
-            return "game_over"
+            self._has_spoken = True
 
         self.audio_status = "PHASE_CLEAR"
         if self._phase_index == len(_PHASE_TARGETS) - 1:
+            if self._has_spoken:
+                game_state.enter_game_over(SOUND_LIMIT_REASON)
+                self.audio_status = "FAILED_MATCH"
+                return "game_over"
             game_state.mark_stage_clear(2)
             return "stage3"
 
