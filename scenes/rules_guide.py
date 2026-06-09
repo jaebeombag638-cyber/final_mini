@@ -28,25 +28,28 @@ class RulesGuideScene(Scene):
         screen.fill(_BACKGROUND_COLOR)
 
         title_font = pygame.font.Font(config.FONT_PATH, 72)
-        rule_font = pygame.font.Font(config.FONT_PATH, 38)
-        hint_font = pygame.font.Font(config.FONT_PATH, 30)
+        rule_font = pygame.font.Font(config.FONT_PATH, 28)
+        hint_font = pygame.font.Font(config.FONT_PATH, 20)
 
-        title = title_font.render("생존을 위한 경고", True, _TITLE_COLOR)
+        title = title_font.render("다행이네요! 아직 살아 계시군요.", True, _TITLE_COLOR)
         screen.blit(
             title,
             title.get_rect(center=(config.SCREEN_WIDTH // 2, 140)),
         )
 
         rules = (
-            "소리를 내지 마세요. 그들은 숨소리조차 들을 수 있습니다.",
-            "표정을 유지하세요. 두려움을 드러내는 순간 그들은 당신의 육체를 탐내기 시작합니다.",
-            "시선을 돌리지 마세요. 얼굴이 화면 밖으로 벗어나면 결계가 무너집니다.",
+            "너무 겁먹진 마세요. 제가 당신을 도와드릴게요.",
+            "우선 조용히 계셔야 해요. 그들은 아주 예민해서 작은 숨소리도 놓치지 않거든요.",
+            "그리고 즐거워도, 무서워도 너무 솔직해지지는 마세요.",
+            "배고픈 그들에게 당신이 아직 살아있다는 사실을 알려줄 필요는 없으니까요.",
+            "마지막으로 제가 당신을 계속 지켜볼 수 있게 해주세요.",
+            "제 시야에서 벗어나는 건 좋은 선택이 아닐걸요?"
         )
         for index, text in enumerate(rules):
             rule = rule_font.render(text, True, _RULE_COLOR)
             screen.blit(
                 rule,
-                rule.get_rect(center=(config.SCREEN_WIDTH // 2, 280 + index * 86)),
+                rule.get_rect(center=(config.SCREEN_WIDTH // 2, 280 + index * 60)),
             )
 
         hint = hint_font.render("SPACE: 시작    ESC: 종료", True, _HINT_COLOR)
