@@ -79,7 +79,7 @@ class IntroScene(Scene):
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            return "stage1"
+            return "rules_guide"
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return "quit"
         return None
@@ -87,7 +87,7 @@ class IntroScene(Scene):
     def update(self, dt, game_state, services) -> str | None:
         self._elapsed += dt
         if self._elapsed >= _INTRO_DURATION:
-            return "stage1"
+            return "rules_guide"
 
         camera = services.get("camera")
         detector = services.get("detector")
