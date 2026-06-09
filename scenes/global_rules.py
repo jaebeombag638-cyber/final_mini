@@ -28,8 +28,14 @@ def apply_global_rules(
     if face_result is not None:
         face_tracker = services.get("face_tracker")
         baseline = getattr(face_tracker, "baseline_mouth_landmarks", None)  # face_tracker 안에 저장된 기준 입 좌표 가져오기
+        if baseline is None:
+            baseline = game_state.baseline_mouth_landmarks
+        if baseline is None and face_result.face_detected:
+            baseline = face_result.mouth_landmarks
+            if hasattr(face_tracker, "baseline_mouth_landmarks"):
+                face_tracker.baseline_mouth_landmarks = baseline
         game_state.update_mouth_landmarks(
-            baseline=baseline or game_state.baseline_mouth_landmarks,
+            baseline=baseline,
             current=face_result.mouth_landmarks,
         )
         face_detected = face_result.face_detected

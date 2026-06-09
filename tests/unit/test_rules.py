@@ -1,5 +1,11 @@
 from core.game_state import GameState
-from core.rules import GlobalRules, RuleEvaluation
+from core.rules import (
+    FACE_MISSING_REASON,
+    MOUTH_MOVEMENT_REASON,
+    SOUND_LIMIT_REASON,
+    GlobalRules,
+    RuleEvaluation,
+)
 
 
 BASELINE_MOUTH = (
@@ -21,7 +27,7 @@ def test_sound_limit_returns_game_over_reason_immediately():
         audio_db=65.0,
     )
 
-    assert result == RuleEvaluation(violated=True, reason="sound_limit")
+    assert result == RuleEvaluation(violated=True, reason=SOUND_LIMIT_REASON)
 
 
 def test_microphone_fallback_does_not_trigger_sound_limit():
@@ -64,7 +70,7 @@ def test_mouth_change_must_continue_until_fail_seconds():
     )
 
     assert first_result == RuleEvaluation(violated=False, reason=None)
-    assert second_result == RuleEvaluation(violated=True, reason="mouth_movement")
+    assert second_result == RuleEvaluation(violated=True, reason=MOUTH_MOVEMENT_REASON)
 
 
 def test_mouth_timer_resets_when_mouth_returns_to_baseline():
@@ -121,7 +127,7 @@ def test_face_missing_must_continue_until_fail_seconds():
     )
 
     assert first_result == RuleEvaluation(violated=False, reason=None)
-    assert second_result == RuleEvaluation(violated=True, reason="face_missing")
+    assert second_result == RuleEvaluation(violated=True, reason=FACE_MISSING_REASON)
 
 
 def test_apply_to_game_state_enters_game_over_when_rule_is_violated():
@@ -140,4 +146,4 @@ def test_apply_to_game_state_enters_game_over_when_rule_is_violated():
 
     assert result == "game_over"
     assert game_state.is_game_over is True
-    assert game_state.game_over_reason == "sound_limit"
+    assert game_state.game_over_reason == SOUND_LIMIT_REASON

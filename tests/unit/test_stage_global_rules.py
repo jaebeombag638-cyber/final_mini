@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from core.audio import AudioLevel
 from core.face_tracker import FaceTrackingResult
 from core.game_state import GameState
+from core.rules import GlobalRules, MOUTH_MOVEMENT_REASON
 from scenes.stage1 import Stage1Scene
 from scenes.stage2 import Stage2Scene
 from scenes.stage3 import Stage3Scene
@@ -62,6 +63,21 @@ class FakeFaceTracker:
         )
 
 
+class FakeFaceTrackerWithoutBaseline:
+    baseline_mouth_landmarks = None
+
+    def __init__(self) -> None:
+        self.track_calls = []
+
+    def track(self, frame, now: float) -> FaceTrackingResult:
+        self.track_calls.append((frame, now))
+        mouth_landmarks = BASELINE_MOUTH if len(self.track_calls) == 1 else CURRENT_MOUTH
+        return FaceTrackingResult(
+            face_detected=True,
+            mouth_landmarks=mouth_landmarks,
+        )
+
+
 class FakeRules:
     def __init__(self, transition: str | None = None) -> None:
         self.transition = transition
@@ -78,11 +94,11 @@ class FakeRules:
         return self.transition
 
 
-def make_services(rules: FakeRules):
+def make_services(rules, face_tracker=None):
     return {
         "camera": FakeCamera(),
         "audio": FakeAudio(),
-        "face_tracker": FakeFaceTracker(),
+        "face_tracker": face_tracker or FakeFaceTracker(),
         "rules": rules,
     }
 
@@ -116,3 +132,21 @@ def test_stage_timer_transition_runs_when_global_rules_pass():
 
     assert transition == "stage2"
     assert len(rules.calls) == 1
+
+
+def test_stage_global_rules_use_first_detected_mouth_as_baseline():
+    rules = GlobalRules(mouth_fail_seconds=0.2)
+    face_tracker = FakeFaceTrackerWithoutBaseline()
+    services = make_services(rules, face_tracker=face_tracker)
+    game_state = GameState(current_scene="stage1")
+    scene = Stage1Scene()
+
+    first_transition = scene.update(0.1, game_state, services)
+    second_transition = scene.update(0.1, game_state, services)
+    third_transition = scene.update(0.1, game_state, services)
+
+    assert first_transition is None
+    assert second_transition is None
+    assert third_transition == "game_over"
+    assert game_state.baseline_mouth_landmarks == BASELINE_MOUTH
+    assert game_state.game_over_reason == MOUTH_MOVEMENT_REASON
