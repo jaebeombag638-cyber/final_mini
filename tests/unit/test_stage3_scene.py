@@ -79,3 +79,19 @@ def test_stage3_updates_player_hitbox_without_detector_cache():
 
     assert detector.detect_calls == [(1, False), (2, False)]
     assert scene.player_hitbox != first_hitbox
+
+
+def test_stage3_ghosts_stay_near_outer_screen_bands():
+    scene = Stage3Scene()
+    center_top = 240
+    center_bottom = 480
+
+    for _ in range(100):
+        for ghost in scene.ghosts:
+            scene._move_ghost(ghost, 0.1)
+
+    top_ghost = scene.ghosts[0]["bbox"]
+    bottom_ghost = scene.ghosts[1]["bbox"]
+
+    assert top_ghost[3] <= center_top
+    assert bottom_ghost[1] >= center_bottom

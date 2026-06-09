@@ -10,6 +10,8 @@ _GHOST_SIZE = 60
 _GHOST_SPEED_X = 120
 _GHOST_SPEED_Y = 90
 _PLAYER_HITBOX_RATIO = 0.4
+_GHOST_EDGE_BAND_HEIGHT = 180
+_GHOST_MARGIN = 20
 
 
 class Stage3Scene(Scene):
@@ -17,16 +19,32 @@ class Stage3Scene(Scene):
         self.player_bbox = None
         self.player_hitbox = None
         self.ghosts = [
-            {"bbox": (20, 20, 80, 80), "vx": _GHOST_SPEED_X, "vy": _GHOST_SPEED_Y},
             {
                 "bbox": (
-                    config.SCREEN_WIDTH - _GHOST_SIZE - 20,
-                    config.SCREEN_HEIGHT - _GHOST_SIZE - 20,
-                    config.SCREEN_WIDTH - 20,
-                    config.SCREEN_HEIGHT - 20,
+                    _GHOST_MARGIN,
+                    _GHOST_MARGIN,
+                    _GHOST_MARGIN + _GHOST_SIZE,
+                    _GHOST_MARGIN + _GHOST_SIZE,
+                ),
+                "vx": _GHOST_SPEED_X,
+                "vy": _GHOST_SPEED_Y,
+                "bounds": (0, 0, config.SCREEN_WIDTH, _GHOST_EDGE_BAND_HEIGHT),
+            },
+            {
+                "bbox": (
+                    config.SCREEN_WIDTH - _GHOST_SIZE - _GHOST_MARGIN,
+                    config.SCREEN_HEIGHT - _GHOST_SIZE - _GHOST_MARGIN,
+                    config.SCREEN_WIDTH - _GHOST_MARGIN,
+                    config.SCREEN_HEIGHT - _GHOST_MARGIN,
                 ),
                 "vx": -_GHOST_SPEED_X,
                 "vy": -_GHOST_SPEED_Y,
+                "bounds": (
+                    0,
+                    config.SCREEN_HEIGHT - _GHOST_EDGE_BAND_HEIGHT,
+                    config.SCREEN_WIDTH,
+                    config.SCREEN_HEIGHT,
+                ),
             },
         ]
         self.survive_time = 0.0
@@ -147,17 +165,33 @@ class Stage3Scene(Scene):
     def _move_ghost(self, ghost, dt):
         x1, y1, x2, y2 = ghost["bbox"]
         vx, vy = ghost["vx"], ghost["vy"]
+        min_x, min_y, max_x, max_y = ghost.get(
+            "bounds",
+            (0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT),
+        )
 
         x1 += vx * dt
         x2 += vx * dt
         y1 += vy * dt
         y2 += vy * dt
 
-        if x1 <= 0 or x2 >= config.SCREEN_WIDTH:
+        if x1 <= min_x or x2 >= max_x:
             ghost["vx"] *= -1
+            if x1 <= min_x:
+                x2 += min_x - x1
+                x1 = min_x
+            else:
+                x1 -= x2 - max_x
+                x2 = max_x
 
-        if y1 <= 0 or y2 >= config.SCREEN_HEIGHT:
+        if y1 <= min_y or y2 >= max_y:
             ghost["vy"] *= -1
+            if y1 <= min_y:
+                y2 += min_y - y1
+                y1 = min_y
+            else:
+                y1 -= y2 - max_y
+                y2 = max_y
 
         ghost["bbox"] = (int(x1), int(y1), int(x2), int(y2))
 
