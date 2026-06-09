@@ -12,7 +12,6 @@ _PHASE_TARGETS = (
 )
 _RECORD_SECONDS = 10.0
 _INTRO_DURATION_SECONDS = 2.0
-_VOICE_DB_LIMIT = 50.0
 
 
 class Stage2Scene(Scene):
@@ -26,10 +25,8 @@ class Stage2Scene(Scene):
         self.time_elapsed: float = 0.0
         self.time_limit: float = _RECORD_SECONDS
         self.audio_status: str = "RECORDING"
-        self.current_live_db: float = 0.0
         self.user_spoken_text: str = ""
         self.match_ratio_percent: float = 0.0
-        self.custom_audio_limit: float = _VOICE_DB_LIMIT
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -160,17 +157,6 @@ class Stage2Scene(Scene):
             result_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 35)),
         )
 
-        db_display = (
-            f"현재 소음도: {self.current_live_db} dB  /  "
-            f"음성 인식 커트라인: {self.custom_audio_limit} dB"
-        )
-        db_color = (0, 220, 100) if self.current_live_db < self.custom_audio_limit else (255, 100, 0)
-        db_surface = debug_font.render(db_display, True, db_color)
-        screen.blit(
-            db_surface,
-            db_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 65)),
-        )
-
         remaining_time = max(0.0, self.time_limit - self.time_elapsed)
         phase_surface = phase_font.render(
             f"음성 돌파 단계 [ {self.current_phase} / 3 ]  |  남은 시간: {round(remaining_time, 1)}초",
@@ -179,12 +165,12 @@ class Stage2Scene(Scene):
         )
         screen.blit(
             phase_surface,
-            phase_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 105)),
+            phase_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 75)),
         )
 
         bar_width, bar_height = 500, 20
         bar_x = (config.SCREEN_WIDTH - bar_width) // 2
-        bar_y = (config.SCREEN_HEIGHT // 2) + 140
+        bar_y = (config.SCREEN_HEIGHT // 2) + 110
         pygame.draw.rect(screen, (70, 70, 70), (bar_x, bar_y, bar_width, bar_height), 2)
         fill_width = int(bar_width * (self.progress / 100.0))
         if fill_width > 0:
