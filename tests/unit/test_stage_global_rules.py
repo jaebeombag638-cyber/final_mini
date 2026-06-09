@@ -134,15 +134,21 @@ def test_stage_scenes_apply_global_rules_before_normal_transition():
         assert rules.calls == [(0.1, game_state, True, False)]
 
 
-def test_stage_timer_transition_runs_when_global_rules_pass():
+def test_stage1_phase_transition_runs_when_global_rules_pass():
     rules = FakeRules()
     services = make_services(rules)
     scene = Stage1Scene()
 
-    transition = scene.update(5.0, GameState(), services)
+    game_state = GameState()
 
-    assert transition == "stage2"
-    assert len(rules.calls) == 1
+    intro_transition = scene.update(4.0, game_state, services)
+    stare_transition = scene.update(5.0, game_state, services)
+    clear_transition = scene.update(3.0, game_state, services)
+
+    assert intro_transition is None
+    assert stare_transition is None
+    assert clear_transition == "stage2"
+    assert len(rules.calls) == 3
 
 
 def test_stage_global_rules_use_first_detected_mouth_as_baseline():

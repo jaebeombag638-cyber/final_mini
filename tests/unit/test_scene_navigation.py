@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pygame
 
+from core.game_state import GameState
 from scenes.ending import EndingScene
 from scenes.intro import IntroScene
 from scenes.rules_guide import RulesGuideScene
@@ -27,11 +28,13 @@ def test_space_key_moves_through_temporary_scene_flow():
         assert scene.handle_event(keydown_event(pygame.K_SPACE), object()) == next_scene
 
 
-def test_stage1_scene_transitions_after_five_seconds():
+def test_stage1_scene_transitions_after_intro_stare_and_jumpscare():
     stage1 = Stage1Scene()
+    game_state = GameState()
 
-    assert stage1.update(dt=4.9, game_state=object(), services={}) is None
-    assert stage1.update(dt=0.1, game_state=object(), services={}) == "stage2"
+    assert stage1.update(dt=4.0, game_state=game_state, services={}) is None
+    assert stage1.update(dt=5.0, game_state=game_state, services={}) is None
+    assert stage1.update(dt=3.0, game_state=game_state, services={}) == "stage2"
 
 
 def test_escape_key_requests_quit_from_temporary_scenes():
