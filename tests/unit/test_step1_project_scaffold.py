@@ -33,6 +33,7 @@ def test_config_defaults_match_step1_plan():
     assert config.FPS == 30
     assert config.CAMERA_INDEX == 0
     assert config.AUDIO_LIMIT_DB == 65.0
+    assert config.MOUTH_LANDMARK_FAIL_SECONDS == 0.5
     assert config.FONT_PATH.as_posix() == "assets/fonts/MUNMAK_DALBANCHE.ttf"
     assert config.STAGE_TRANSITION_SECONDS == 5.0
     assert config.STAGE1_DURATION_SECONDS == 10.0
