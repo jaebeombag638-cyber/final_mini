@@ -12,7 +12,7 @@ _PHASE_TARGETS = (
     "살고 싶다면 지금 당장 소리 내어 읽으세요",
 )
 _RECORD_SECONDS = 10.0
-_INTRO_DURATION_SECONDS = 5.0
+_INTRO_DURATION_SECONDS = 1.0
 
 
 class Stage2Scene(Scene):
