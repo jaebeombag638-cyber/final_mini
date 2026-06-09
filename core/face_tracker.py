@@ -149,10 +149,15 @@ class FaceTracker:
         self.landmarker = None
 
     def _should_use_cache(self, now: float) -> bool:
+        elapsed_since_last_check = (
+            now - self._last_checked_at
+            if self._last_checked_at is not None
+            else None
+        )
         return (
             self._last_result is not None
-            and self._last_checked_at is not None
-            and now - self._last_checked_at < self.check_interval_seconds
+            and elapsed_since_last_check is not None
+            and 0 <= elapsed_since_last_check < self.check_interval_seconds
         )
 
     def _cache_result(

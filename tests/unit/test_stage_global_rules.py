@@ -21,6 +21,12 @@ CURRENT_MOUTH = (
     (0.0, -0.25),
     (0.0, 0.25),
 )
+STALE_MOUTH = (
+    (-0.5, -0.2),
+    (0.5, 0.0),
+    (0.0, -0.25),
+    (0.0, 0.25),
+)
 
 
 class FakeCamera:
@@ -50,8 +56,6 @@ class FakeAudio:
 
 
 class FakeFaceTracker:
-    baseline_mouth_landmarks = BASELINE_MOUTH
-
     def __init__(self) -> None:
         self.track_calls = []
 
@@ -61,6 +65,10 @@ class FakeFaceTracker:
             face_detected=True,
             mouth_landmarks=CURRENT_MOUTH,
         )
+
+
+class FakeFaceTrackerWithStaleBaseline(FakeFaceTracker):
+    baseline_mouth_landmarks = STALE_MOUTH
 
 
 class FakeFaceTrackerWithoutBaseline:
@@ -107,7 +115,10 @@ def test_stage_scenes_apply_global_rules_before_normal_transition():
     for scene_class in (Stage1Scene, Stage2Scene, Stage3Scene):
         rules = FakeRules(transition="game_over")
         services = make_services(rules)
-        game_state = GameState(current_scene="stage1")
+        game_state = GameState(
+            current_scene="stage1",
+            baseline_mouth_landmarks=BASELINE_MOUTH,
+        )
         scene = scene_class()
 
         transition = scene.update(0.1, game_state, services)
@@ -150,3 +161,16 @@ def test_stage_global_rules_use_first_detected_mouth_as_baseline():
     assert third_transition == "game_over"
     assert game_state.baseline_mouth_landmarks == BASELINE_MOUTH
     assert game_state.game_over_reason == MOUTH_MOVEMENT_REASON
+
+
+def test_stage_global_rules_ignore_face_tracker_baseline():
+    rules = FakeRules()
+    face_tracker = FakeFaceTrackerWithStaleBaseline()
+    services = make_services(rules, face_tracker=face_tracker)
+    game_state = GameState(current_scene="stage1")
+    scene = Stage1Scene()
+
+    transition = scene.update(0.1, game_state, services)
+
+    assert transition is None
+    assert game_state.baseline_mouth_landmarks == CURRENT_MOUTH

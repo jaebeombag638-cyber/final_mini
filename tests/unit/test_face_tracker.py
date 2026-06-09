@@ -154,6 +154,24 @@ def test_track_reuses_cached_result_inside_check_interval():
     assert landmarker.detect_calls == 1
 
 
+def test_track_does_not_reuse_cache_when_time_goes_backwards():
+    first_face = make_face_landmarks()
+    second_face = make_face_landmarks(lower=(0.5, 0.65))
+    landmarker = FakeLandmarker([first_face, second_face])
+    tracker = FaceTracker(landmarker=landmarker, check_interval_seconds=0.5)
+
+    tracker.track(frame=object(), now=2.0)
+    result = tracker.track(frame=object(), now=0.1)
+
+    assert result.mouth_landmarks == (
+        (0.5, 0.0),
+        (-0.5, 0.0),
+        (0.0, -0.25),
+        (0.0, 0.75),
+    )
+    assert landmarker.detect_calls == 2
+
+
 def test_track_returns_fallback_when_landmarker_raises_error():
     tracker = FaceTracker(landmarker=FailingLandmarker())
 
