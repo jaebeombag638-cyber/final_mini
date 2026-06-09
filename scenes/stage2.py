@@ -42,7 +42,9 @@ class Stage2Scene(Scene):
 
         if self._elapsed < self.intro_duration:
             return None
-        self.intro_done = True
+        if not self.intro_done:
+            self.intro_done = True
+            return None
 
         speech = services.get("speech")
         if speech is None:

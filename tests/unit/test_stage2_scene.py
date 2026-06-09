@@ -46,6 +46,8 @@ def test_stage2_moves_to_stage3_only_when_no_speech_is_recognized():
     services = {"speech": speech}
 
     assert scene.update(scene.intro_duration, game_state, services) is None
+    assert speech.calls == []
+    assert scene.update(0.1, game_state, services) is None
     assert scene.update(0.1, game_state, services) is None
     assert scene.update(0.1, game_state, services) == "stage3"
 
@@ -62,8 +64,10 @@ def test_stage2_enters_game_over_when_any_speech_is_recognized():
     scene = Stage2Scene()
     game_state = GameState(current_scene="stage2")
 
-    transition = scene.update(scene.intro_duration, game_state, {"speech": speech})
+    first_transition = scene.update(scene.intro_duration, game_state, {"speech": speech})
+    transition = scene.update(0.1, game_state, {"speech": speech})
 
+    assert first_transition is None
     assert transition == "game_over"
     assert game_state.is_game_over is True
     assert game_state.game_over_reason == SOUND_LIMIT_REASON
