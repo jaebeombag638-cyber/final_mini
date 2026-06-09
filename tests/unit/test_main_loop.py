@@ -83,6 +83,22 @@ def test_apply_scene_transition_updates_current_scene():
     assert game_state.current_scene == "intro"
 
 
+def test_apply_scene_transition_resets_target_scene_when_supported():
+    stage1 = Stage1Scene()
+    stage1.update(dt=5.0, game_state=GameState(), services={})
+    game_state = GameState(current_scene="game_over")
+
+    should_keep_running = apply_scene_transition(
+        "stage1",
+        game_state,
+        {"stage1": stage1},
+    )
+
+    assert should_keep_running is True
+    assert game_state.current_scene == "stage1"
+    assert stage1.update(dt=0.1, game_state=game_state, services={}) is None
+
+
 def test_apply_scene_transition_keeps_scene_when_transition_is_none():
     game_state = GameState(current_scene="stage1")
 

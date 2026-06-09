@@ -56,11 +56,20 @@ def create_scenes() -> dict[str, object]:
     }
 
 
-def apply_scene_transition(transition: str | None, game_state: GameState) -> bool:
+def apply_scene_transition(
+    transition: str | None,
+    game_state: GameState,
+    scenes: dict[str, object] | None = None,
+) -> bool:
     if transition is None:
         return True
     if transition == "quit":
         return False
+
+    if scenes is not None:
+        next_scene = scenes.get(transition)
+        if next_scene is not None and hasattr(next_scene, "reset"):
+            next_scene.reset()
 
     game_state.change_scene(transition)
     return True
@@ -88,7 +97,7 @@ def run() -> None:
                     break
 
                 transition = current_scene.handle_event(event, game_state)
-                running = apply_scene_transition(transition, game_state)
+                running = apply_scene_transition(transition, game_state, scenes)
                 if not running:
                     break
 
@@ -98,7 +107,7 @@ def run() -> None:
             dt = clock.get_time() / 1000
             current_scene = scenes[game_state.current_scene]
             transition = current_scene.update(dt, game_state, services)
-            running = apply_scene_transition(transition, game_state)
+            running = apply_scene_transition(transition, game_state, scenes)
             if not running:
                 break
 

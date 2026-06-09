@@ -9,6 +9,9 @@ class Stage1Scene(Scene):
     def __init__(self) -> None:
         self._elapsed: float = 0.0
 
+    def reset(self) -> None:
+        self._elapsed = 0.0
+
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             return "stage2"
