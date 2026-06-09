@@ -12,6 +12,7 @@ _GHOST_SPEED_Y = 90
 _PLAYER_HITBOX_RATIO = 0.4
 _GHOST_EDGE_BAND_HEIGHT = 180
 _GHOST_MARGIN = 20
+_GHOST_FLUORESCENT_COLOR = (57, 255, 20)
 
 
 class Stage3Scene(Scene):
@@ -238,5 +239,7 @@ class Stage3Scene(Scene):
 
     def _get_ghost_image(self):
         if self.ghost_image is None:
-            self.ghost_image = pygame.image.load(_GHOST_IMAGE_PATH).convert_alpha()
+            ghost_image = pygame.image.load(_GHOST_IMAGE_PATH).convert_alpha()
+            ghost_image.fill(_GHOST_FLUORESCENT_COLOR, special_flags=pygame.BLEND_RGB_ADD)
+            self.ghost_image = ghost_image
         return self.ghost_image
