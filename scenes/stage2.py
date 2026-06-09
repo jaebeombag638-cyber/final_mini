@@ -1,6 +1,7 @@
 import pygame
 
 import config
+from core.rules import SOUND_LIMIT_REASON
 from core.scene import Scene
 from scenes.global_rules import apply_global_rules
 
@@ -11,7 +12,7 @@ _PHASE_TARGETS = (
     "살고 싶다면 지금 당장 소리 내어 읽으세요",
 )
 _RECORD_SECONDS = 10.0
-_INTRO_DURATION_SECONDS = 2.0
+_INTRO_DURATION_SECONDS = 5.0
 
 
 class Stage2Scene(Scene):
@@ -60,8 +61,8 @@ class Stage2Scene(Scene):
         self.user_spoken_text = result.recognized_text.strip() or "(판독 불가)"
         self.match_ratio_percent = round(result.similarity * 100.0, 1)
 
-        if not result.passed:
-            game_state.enter_game_over("음성 인식 실패")
+        if self.user_spoken_text != "(판독 불가)":
+            game_state.enter_game_over(SOUND_LIMIT_REASON)
             self.audio_status = "FAILED_MATCH"
             return "game_over"
 
