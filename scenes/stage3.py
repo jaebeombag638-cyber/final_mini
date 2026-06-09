@@ -9,7 +9,7 @@ _GHOST_IMAGE_PATH = "assets/images/miiya-halloween-4451903_640.png"
 _GHOST_SIZE = 60
 _GHOST_SPEED_X = 120
 _GHOST_SPEED_Y = 90
-_PLAYER_HITBOX_RATIO = 0.5
+_PLAYER_HITBOX_RATIO = 0.4
 
 
 class Stage3Scene(Scene):
@@ -76,14 +76,13 @@ class Stage3Scene(Scene):
         )
 
         if detected_bbox is not None:
-            _, image_width = camera_frame.image.shape[:2]
-
-            if camera.mirror_display:
-                detected_bbox = self._mirror_bbox(detected_bbox, image_width)
-
-            self.player_bbox = detected_bbox
-            self.player_hitbox = self._shrink_bbox(
+            self.player_bbox = self._scale_bbox_to_screen(
                 detected_bbox,
+                camera_frame.image,
+                camera.mirror_display,
+            )
+            self.player_hitbox = self._shrink_bbox(
+                self.player_bbox,
                 _PLAYER_HITBOX_RATIO,
             )
         else:
@@ -109,12 +108,16 @@ class Stage3Scene(Scene):
 
         if self.current_frame and camera is not None:
             surface = camera.to_surface(self.current_frame.image)
+            surface = pygame.transform.scale(
+                surface,
+                (config.SCREEN_WIDTH, config.SCREEN_HEIGHT),
+            )
             screen.blit(surface, (0, 0))
         else:
             screen.fill((0, 0, 0))
 
-        if self.player_bbox:
-            pygame.draw.rect(screen, (0, 255, 0), self._to_rect(self.player_bbox), 3)
+        if self.player_hitbox:
+            pygame.draw.rect(screen, (0, 255, 0), self._to_rect(self.player_hitbox), 3)
 
         for ghost in self.ghosts:
             rect = self._to_rect(ghost["bbox"])
@@ -173,15 +176,30 @@ class Stage3Scene(Scene):
             int(y2 - dy),
         )
 
-    def _mirror_bbox(self, bbox, image_width):
+    def _scale_bbox_to_screen(self, bbox, frame, mirror_display):
         x1, y1, x2, y2 = bbox
+        frame_width, frame_height = self._get_frame_size(frame)
+        if mirror_display:
+            x1, x2 = frame_width - x2, frame_width - x1
+
+        scale_x = config.SCREEN_WIDTH / frame_width
+        scale_y = config.SCREEN_HEIGHT / frame_height
 
         return (
-            image_width - x2,
-            y1,
-            image_width - x1,
-            y2,
+            int(x1 * scale_x),
+            int(y1 * scale_y),
+            int(x2 * scale_x),
+            int(y2 * scale_y),
         )
+
+    def _get_frame_size(self, frame):
+        try:
+            frame_height, frame_width = frame.shape[:2]
+        except AttributeError:
+            frame_height = len(frame)
+            frame_width = len(frame[0]) if frame_height else config.SCREEN_WIDTH
+
+        return max(frame_width, 1), max(frame_height, 1)
 
     def _get_ghost_image(self):
         if self.ghost_image is None:
