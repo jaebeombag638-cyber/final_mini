@@ -13,6 +13,7 @@ _PLAYER_HITBOX_RATIO = 0.4
 _GHOST_EDGE_BAND_HEIGHT = 180
 _GHOST_MARGIN = 20
 _GHOST_FLUORESCENT_COLOR = (57, 255, 20)
+_GHOST_OUTLINE_WIDTH = 6
 
 
 class Stage3Scene(Scene):
@@ -53,6 +54,7 @@ class Stage3Scene(Scene):
         self.frame_index = 0
         self.current_frame = None
         self.ghost_image = None
+        self.ghost_outline_image = None
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -141,10 +143,16 @@ class Stage3Scene(Scene):
 
         for ghost in self.ghosts:
             rect = self._to_rect(ghost["bbox"])
+            outline_rect = rect.inflate(_GHOST_OUTLINE_WIDTH * 2, _GHOST_OUTLINE_WIDTH * 2)
+            ghost_outline_img = pygame.transform.scale(
+                self._get_ghost_outline_image(),
+                (outline_rect.width, outline_rect.height),
+            )
             ghost_img = pygame.transform.scale(
                 self._get_ghost_image(),
                 (rect.width, rect.height),
             )
+            screen.blit(ghost_outline_img, outline_rect)
             screen.blit(ghost_img, rect)
 
         font = pygame.font.Font(config.FONT_PATH, 36)
@@ -243,3 +251,10 @@ class Stage3Scene(Scene):
             ghost_image.fill(_GHOST_FLUORESCENT_COLOR, special_flags=pygame.BLEND_RGB_ADD)
             self.ghost_image = ghost_image
         return self.ghost_image
+
+    def _get_ghost_outline_image(self):
+        if self.ghost_outline_image is None:
+            ghost_outline_image = self._get_ghost_image().copy()
+            ghost_outline_image.fill((0, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+            self.ghost_outline_image = ghost_outline_image
+        return self.ghost_outline_image
