@@ -35,7 +35,7 @@ def apply_global_rules(
         )
         face_detected = face_result.face_detected
     
-    # `rules.py`로 넘김
+    # `rules.py`로 넘김 ; 위반이면 "game_over", 아니면 None 반환
     return rules.apply_to_game_state(
         dt=dt,
         game_state=game_state,
