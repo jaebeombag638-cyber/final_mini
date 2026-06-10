@@ -22,7 +22,7 @@ class Stage2Scene(Scene):
     def _reset(self) -> None:
         # Stage 1 스타일 타이머 연동
         self._elapsed: float = 0.0
-        self.intro_duration: float = 2.0    
+        self.intro_duration: float = 1.0    
         self.intro_done: bool = False       
         
         # 단계 제어 (총 10초 내에 돌파해야 함)
