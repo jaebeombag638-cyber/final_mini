@@ -72,7 +72,7 @@ def test_stage2_draw_after_intro_does_not_require_phase_state():
     scene.draw(screen, GameState(), {})
 
 
-def test_stage2_moves_to_stage3_only_when_no_speech_is_recognized():
+def test_stage2_moves_to_stage3_when_time_expires_without_recognized_speech():
     speech = FakeSpeech(
         [
             silent_result("나 여기 있어"),
@@ -84,7 +84,8 @@ def test_stage2_moves_to_stage3_only_when_no_speech_is_recognized():
 
     assert scene.update(scene.intro_duration, game_state, services) is None
     assert speech.calls == []
-    assert scene.update(0.1, game_state, services) == "stage3"
+    assert scene.update(0.1, game_state, services) is None
+    assert scene.update(scene.time_limit, game_state, services) == "stage3"
 
     assert speech.calls == [
         ("나 여기 있어", 5.0),
@@ -153,6 +154,7 @@ def test_stage2_does_not_apply_global_rules_while_prompts_are_active():
     services = {"speech": speech, "rules": rules}
 
     assert scene.update(scene.intro_duration, game_state, services) is None
-    assert scene.update(0.1, game_state, services) == "stage3"
+    assert scene.update(0.1, game_state, services) is None
+    assert scene.update(scene.time_limit, game_state, services) == "stage3"
 
     assert len(rules.calls) == 1
