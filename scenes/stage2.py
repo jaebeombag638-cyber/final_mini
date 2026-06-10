@@ -8,7 +8,7 @@ from core.rules import SOUND_LIMIT_REASON
 from core.speech import SpeechRecognizer
 from scenes.global_rules import apply_global_rules
 
-_FAIL_RESULT_DISPLAY_SECONDS = 3.0
+_FAIL_RESULT_DISPLAY_SECONDS = 5.0
 _TARGET_TEXT = "얄리얄리 얄라셩 얄라리 얄라"
 
 
@@ -42,6 +42,7 @@ class Stage2Scene(Scene):
         self.delay_timer: float = 0.0       
         self._legacy_speech_checked: bool = False
         self._pending_speech_game_over: bool = False
+        self._ignore_next_fail_dt: bool = False
 
     def reset(self) -> None:
         self.stop_stream()
@@ -77,8 +78,7 @@ class Stage2Scene(Scene):
             self.stream = None
 
     def handle_event(self, event, game_state) -> str | None:
-        if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_0:
-            self._release_stage_audio()
+        if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:
             return "stage3"
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self._release_stage_audio()
@@ -161,6 +161,7 @@ class Stage2Scene(Scene):
                         
                         if result.recognized_text:
                             self.audio_status = "FAILED_MATCH"
+                            self._ignore_next_fail_dt = True
                         else:
                             self.audio_status = "RECORDING"
                             self.recorded_chunks = []
@@ -168,6 +169,7 @@ class Stage2Scene(Scene):
                     except Exception as e:
                         print(f"[에러]: {e}")
                         self.audio_status = "FAILED_MATCH"
+                        self._ignore_next_fail_dt = True
                 
                 self.delay_timer = 0.0
 
@@ -175,6 +177,10 @@ class Stage2Scene(Scene):
         # 3-A. 실패: 인식된 문장이 있으면 결과를 잠시 보여준 뒤 게임 오버
         # -----------------------------------------------------------------
         elif self.audio_status == "FAILED_MATCH":
+            if self._ignore_next_fail_dt:
+                self._ignore_next_fail_dt = False
+                return None
+
             self.delay_timer += dt
             if self.delay_timer >= _FAIL_RESULT_DISPLAY_SECONDS:
                 self._release_stage_audio()
@@ -207,6 +213,10 @@ class Stage2Scene(Scene):
 
     def _update_without_audio_stream(self, dt, game_state, speech) -> str | None:
         if self._pending_speech_game_over:
+            if self._ignore_next_fail_dt:
+                self._ignore_next_fail_dt = False
+                return None
+
             self.delay_timer += dt
             if self.delay_timer >= _FAIL_RESULT_DISPLAY_SECONDS:
                 game_state.enter_game_over(SOUND_LIMIT_REASON)
@@ -231,6 +241,7 @@ class Stage2Scene(Scene):
             self.audio_status = "FAILED_MATCH"
             self.delay_timer = 0.0
             self._pending_speech_game_over = True
+            self._ignore_next_fail_dt = True
             return None
 
         self.user_spoken_text = "(판독 불가)"

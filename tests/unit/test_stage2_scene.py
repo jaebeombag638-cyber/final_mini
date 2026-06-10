@@ -56,10 +56,10 @@ def keydown_event(key: int) -> SimpleNamespace:
     return SimpleNamespace(type=pygame.KEYDOWN, key=key)
 
 
-def test_stage2_zero_key_moves_to_stage3():
+def test_stage2_space_key_moves_to_stage3():
     scene = Stage2Scene()
 
-    assert scene.handle_event(keydown_event(pygame.K_0), GameState()) == "stage3"
+    assert scene.handle_event(keydown_event(pygame.K_SPACE), GameState()) == "stage3"
 
 
 def test_stage2_draw_after_intro_does_not_require_phase_state():
@@ -88,7 +88,7 @@ def test_stage2_moves_to_stage3_when_time_expires_without_recognized_speech():
     assert scene.update(scene.time_limit, game_state, services) == "stage3"
 
     assert speech.calls == [
-            ("얄리얄리얄라성", 5.0),
+            ("얄리얄리 얄라셩 얄라리 얄라", 5.0),
     ]
     assert scene.user_spoken_text == "(판독 불가)"
     assert scene.match_ratio_percent == 0.0
@@ -114,7 +114,12 @@ def test_stage2_enters_game_over_when_any_speech_is_recognized():
     assert scene.match_ratio_percent == 100.0
     assert scene.audio_status == "FAILED_MATCH"
 
-    transition = scene.update(2.9, game_state, services)
+    transition = scene.update(0.0, game_state, services)
+
+    assert transition is None
+    assert game_state.is_game_over is False
+
+    transition = scene.update(4.9, game_state, services)
 
     assert transition is None
     assert game_state.is_game_over is False
@@ -124,6 +129,30 @@ def test_stage2_enters_game_over_when_any_speech_is_recognized():
     assert transition == "game_over"
     assert game_state.is_game_over is True
     assert game_state.game_over_reason == SOUND_LIMIT_REASON
+
+
+def test_stage2_ignores_first_fail_frame_dt_after_recognition_delay():
+    speech = FakeSpeech(
+        [
+            spoken_result("나 여기 있어"),
+        ]
+    )
+    scene = Stage2Scene()
+    game_state = GameState(current_scene="stage2")
+    services = {"speech": speech}
+
+    assert scene.update(scene.intro_duration, game_state, services) is None
+    assert scene.update(0.1, game_state, services) is None
+
+    transition = scene.update(10.0, game_state, services)
+
+    assert transition is None
+    assert game_state.is_game_over is False
+
+    transition = scene.update(5.0, game_state, services)
+
+    assert transition == "game_over"
+    assert game_state.is_game_over is True
 
 
 def test_stage2_reset_returns_to_intro_state_after_pending_game_over():

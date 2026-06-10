@@ -18,9 +18,24 @@ _GHOST_OUTLINE_WIDTH = 6
 
 class Stage3Scene(Scene):
     def __init__(self) -> None:
+        self.ghost_image = None
+        self.ghost_outline_image = None
+        self._reset()
+
+    def _reset(self) -> None:
         self.player_bbox = None
         self.player_hitbox = None
-        self.ghosts = [
+        self.ghosts = self._create_ghosts()
+        self.survive_time = 0.0
+        self.clear_time = config.STAGE3_TIME_LIMIT_SECONDS
+        self.frame_index = 0
+        self.current_frame = None
+
+    def reset(self) -> None:
+        self._reset()
+
+    def _create_ghosts(self):
+        return [
             {
                 "bbox": (
                     _GHOST_MARGIN,
@@ -49,12 +64,6 @@ class Stage3Scene(Scene):
                 ),
             },
         ]
-        self.survive_time = 0.0
-        self.clear_time = config.STAGE3_TIME_LIMIT_SECONDS
-        self.frame_index = 0
-        self.current_frame = None
-        self.ghost_image = None
-        self.ghost_outline_image = None
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_SPACE:

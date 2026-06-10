@@ -95,3 +95,24 @@ def test_stage3_ghosts_stay_near_outer_screen_bands():
 
     assert top_ghost[3] <= center_top
     assert bottom_ghost[1] >= center_bottom
+
+
+def test_stage3_reset_restores_runtime_state():
+    scene = Stage3Scene()
+    initial_ghosts = [ghost.copy() for ghost in scene.ghosts]
+
+    scene.survive_time = 3.0
+    scene.frame_index = 10
+    scene.player_bbox = (1, 2, 3, 4)
+    scene.player_hitbox = (2, 3, 4, 5)
+    scene.current_frame = object()
+    scene._move_ghost(scene.ghosts[0], 0.5)
+
+    scene.reset()
+
+    assert scene.survive_time == 0.0
+    assert scene.frame_index == 0
+    assert scene.player_bbox is None
+    assert scene.player_hitbox is None
+    assert scene.current_frame is None
+    assert scene.ghosts == initial_ghosts
