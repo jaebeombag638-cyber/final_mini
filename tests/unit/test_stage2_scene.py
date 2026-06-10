@@ -75,7 +75,7 @@ def test_stage2_draw_after_intro_does_not_require_phase_state():
 def test_stage2_moves_to_stage3_when_time_expires_without_recognized_speech():
     speech = FakeSpeech(
         [
-            silent_result("나 여기 있어"),
+            silent_result("얄리얄리얄라성"),
         ]
     )
     scene = Stage2Scene()
@@ -88,7 +88,7 @@ def test_stage2_moves_to_stage3_when_time_expires_without_recognized_speech():
     assert scene.update(scene.time_limit, game_state, services) == "stage3"
 
     assert speech.calls == [
-        ("나 여기 있어", 5.0),
+            ("얄리얄리얄라성", 5.0),
     ]
     assert scene.user_spoken_text == "(판독 불가)"
     assert scene.match_ratio_percent == 0.0
@@ -114,7 +114,12 @@ def test_stage2_enters_game_over_when_any_speech_is_recognized():
     assert scene.match_ratio_percent == 100.0
     assert scene.audio_status == "FAILED_MATCH"
 
-    transition = scene.update(1.0, game_state, services)
+    transition = scene.update(2.9, game_state, services)
+
+    assert transition is None
+    assert game_state.is_game_over is False
+
+    transition = scene.update(0.1, game_state, services)
 
     assert transition == "game_over"
     assert game_state.is_game_over is True

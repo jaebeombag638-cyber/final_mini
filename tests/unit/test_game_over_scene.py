@@ -80,6 +80,6 @@ def test_draw_renders_game_over_reason_and_restart_button(monkeypatch):
     GameOverScene().draw(FakeScreen(), game_state, services={})
 
     assert "GAME OVER" in rendered_texts
-    assert "실패 이유: sound_limit" in rendered_texts
+    assert "sound_limit" in rendered_texts
     assert "재시작" in rendered_texts
     assert len(blits) == 3

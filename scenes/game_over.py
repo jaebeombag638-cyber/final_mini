@@ -43,7 +43,7 @@ class GameOverScene(Scene):
 
         title = title_font.render("GAME OVER", True, (220, 30, 40))
         reason = reason_font.render(
-            f"실패 이유: {game_state.game_over_reason or '알 수 없음'}",
+            f"{game_state.game_over_reason or '알 수 없음'}",
             True,
             (240, 240, 240),
         )
@@ -83,5 +83,5 @@ class GameOverScene(Scene):
 
     def _restart(self, game_state) -> str:
         game_state.reset_for_restart()
-        game_state.change_scene("stage1")
-        return "stage1"
+        game_state.change_scene("intro")
+        return "intro"

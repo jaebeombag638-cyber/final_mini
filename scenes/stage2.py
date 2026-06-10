@@ -8,6 +8,10 @@ from core.rules import SOUND_LIMIT_REASON
 from core.speech import SpeechRecognizer
 from scenes.global_rules import apply_global_rules
 
+_FAIL_RESULT_DISPLAY_SECONDS = 3.0
+_TARGET_TEXT = "얄리얄리 얄라셩 얄라리 얄라"
+
+
 class Stage2Scene(Scene):
     def __init__(self) -> None:
         self.stream = None
@@ -97,7 +101,7 @@ class Stage2Scene(Scene):
             return None
 
         # 현재 목표 대사 세팅
-        target_text = "나 여기 있어"
+        target_text = _TARGET_TEXT
         
         self.recognizer.target_text = target_text
 
@@ -123,7 +127,7 @@ class Stage2Scene(Scene):
             else:
                 self.audio_status = "CAPTURING_SPEECH"
                 self.capture_timer = 0.0
-                print(f"[목소리 감지!] {self.current_live_db}dB. 지금부터 3초간 문장을 끝까지 녹음합니다.")
+                print(f"[목소리 감지!] {self.current_live_db}dB")
 
             # 제한 시간 동안 조용히 있으면 통과
             if self.progress >= 100.0:
@@ -153,7 +157,7 @@ class Stage2Scene(Scene):
                             self.user_spoken_text = "(판독 불가)"
                             self.match_ratio_percent = 0.0
                             
-                        print(f"[분석 결과] '{self.user_spoken_text}' | 일치율: {self.match_ratio_percent}%")
+                        print(f"[인식 문장] '{self.user_spoken_text}' | 일치율: {self.match_ratio_percent}%")
                         
                         if result.recognized_text:
                             self.audio_status = "FAILED_MATCH"
@@ -162,7 +166,7 @@ class Stage2Scene(Scene):
                             self.recorded_chunks = []
                             
                     except Exception as e:
-                        print(f"[AI 에러]: {e}")
+                        print(f"[에러]: {e}")
                         self.audio_status = "FAILED_MATCH"
                 
                 self.delay_timer = 0.0
@@ -172,7 +176,7 @@ class Stage2Scene(Scene):
         # -----------------------------------------------------------------
         elif self.audio_status == "FAILED_MATCH":
             self.delay_timer += dt
-            if self.delay_timer >= 1.5:
+            if self.delay_timer >= _FAIL_RESULT_DISPLAY_SECONDS:
                 self._release_stage_audio()
                 game_state.enter_game_over(SOUND_LIMIT_REASON)
                 return "game_over"
@@ -204,7 +208,7 @@ class Stage2Scene(Scene):
     def _update_without_audio_stream(self, dt, game_state, speech) -> str | None:
         if self._pending_speech_game_over:
             self.delay_timer += dt
-            if self.delay_timer >= 1.0:
+            if self.delay_timer >= _FAIL_RESULT_DISPLAY_SECONDS:
                 game_state.enter_game_over(SOUND_LIMIT_REASON)
                 return "game_over"
             return None
@@ -254,26 +258,29 @@ class Stage2Scene(Scene):
         status_font = pygame.font.Font(config.FONT_PATH, 26)
         debug_font = pygame.font.Font(config.FONT_PATH, 22)
 
-        text_str = "아무 말도 하지 말고 조용히 버티세요."
-        sub_text = "음성이 인식되면 실패합니다."
+        warning_text = "그들의 기척이 더 가까워졌어요"
+        instruction_text = "당장 아래 말을 따라 읽으세요"
         bar_color = (0, 180, 255)
 
-        text_surface = font.render(text_str, True, (200, 0, 0))
-        screen.blit(text_surface, text_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 110)))
-        
-        sub_surface = sub_font.render(sub_text, True, (120, 120, 120))
-        screen.blit(sub_surface, sub_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 60)))
+        warning_surface = font.render(warning_text, True, (220, 0, 0))
+        screen.blit(warning_surface, warning_surface.get_rect(center=(config.SCREEN_WIDTH // 2, 72)))
+
+        instruction_surface = sub_font.render(instruction_text, True, (220, 0, 0))
+        screen.blit(instruction_surface, instruction_surface.get_rect(center=(config.SCREEN_WIDTH // 2, 122)))
+
+        target_surface = font.render(_TARGET_TEXT, True, (255, 255, 255))
+        screen.blit(target_surface, target_surface.get_rect(center=(config.SCREEN_WIDTH // 2, 178)))
 
         if self.audio_status == "RECORDING":
-            status_str, status_color = "🟢 [ 침묵 유지 중 ] 제한 시간 동안 말하지 마세요.", (0, 255, 100)
+            status_str, status_color = "[ 침묵 유지 중 ]", (0, 255, 100)
         elif self.audio_status == "CAPTURING_SPEECH":
-            status_str, status_color = "🔴 [ 목소리 감지됨 ] 음성 인식 결과를 확인합니다...", (255, 100, 100)
+            status_str, status_color = "[ 목소리 감지됨 ]", (255, 100, 100)
         elif self.audio_status == "ANALYZING":
-            status_str, status_color = "🤖 [ AI 분석 중 ] 인식 문장과 일치율을 계산하고 있습니다...", (0, 255, 255)
+            status_str, status_color = "[ 분석 중 ]", (0, 255, 255)
         elif self.audio_status == "FAILED_MATCH":
-            status_str, status_color = f"⚠️ [ 실패 ] 음성이 인식되었습니다. ({self.match_ratio_percent}%)", (255, 50, 50)
+            status_str, status_color = f"[ 실패 ] {self.match_ratio_percent}%", (255, 50, 50)
         elif self.audio_status == "PHASE_CLEAR":
-            status_str, status_color = "✅ [ 통과 ] 침묵을 유지했습니다. 다음 단계로...", (0, 255, 0)
+            status_str, status_color = "[ 통과 ] 오!", (0, 255, 0)
             
         status_surface = status_font.render(status_str, True, status_color)
         screen.blit(status_surface, status_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 15)))
