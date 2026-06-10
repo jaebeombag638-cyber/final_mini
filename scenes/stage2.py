@@ -1,175 +1,289 @@
 import pygame
-
 import config
-from core.rules import SOUND_LIMIT_REASON
+import numpy as np
+import sys
+from core.audio import AudioMeter
 from core.scene import Scene
+from core.rules import SOUND_LIMIT_REASON
+from core.speech import SpeechRecognizer
 from scenes.global_rules import apply_global_rules
-
-
-_TARGET_TEXT = "나 여기 있어"
-_RECORD_SECONDS = 5.0
-_INTRO_DURATION_SECONDS = 2.0
-_RESULT_DISPLAY_SECONDS = 1.0
-
 
 class Stage2Scene(Scene):
     def __init__(self) -> None:
-        self.reset()
+        self.stream = None
+        self.recognizer = SpeechRecognizer()
+        self.audio_meter = AudioMeter(sample_rate=48000, channels=2)
+        self._reset()
+
+    def _reset(self) -> None:
+        # Stage 1 스타일 타이머 연동
+        self._elapsed: float = 0.0
+        self.intro_duration: float = 2.0    
+        self.intro_done: bool = False       
+        
+        # 단계 제어 (총 10초 내에 돌파해야 함)
+        self.progress: float = 0.0          
+        self.time_elapsed: float = 0.0    
+        self.time_limit: float = 10.0 
+        
+        # 오디오 및 AI 상태 제어
+        self.audio_status: str = "RECORDING" 
+        self.recorded_chunks = []           
+        self.current_live_db: float = 0.0   
+        self.user_spoken_text: str = ""     
+        self.match_ratio_percent: float = 0.0 
+        self.custom_audio_limit = 30.0      # 목소리 감지 커트라인
+        
+        self.capture_timer: float = 0.0     # 💡 목소리 감지 후 '3초' 동안 끝까지 담기 위한 타이머
+        self.delay_timer: float = 0.0       
+        self._legacy_speech_checked: bool = False
+        self._pending_speech_game_over: bool = False
 
     def reset(self) -> None:
-        """장면 재진입 시 음성 판정 상태를 초기화한다."""
-        self._elapsed: float = 0.0
-        self.intro_duration: float = _INTRO_DURATION_SECONDS
-        self.intro_done: bool = False
-        self.progress: float = 0.0
-        self.time_elapsed: float = 0.0
-        self.time_limit: float = _RECORD_SECONDS
-        self.audio_status: str = "RECORDING"
-        self.user_spoken_text: str = ""
-        self.match_ratio_percent: float = 0.0
-        self._pending_game_over_elapsed: float | None = None
+        self.stop_stream()
+        self._reset()
+
+    def _start_audio_stream(self):
+        if self.stream is not None:
+            return
+
+        import sounddevice as sd
+
+        def callback(indata, frames, time_info, status):
+            if status: pass
+            
+            # 실시간 데시벨 측정은 core.audio의 공통 계산식을 사용합니다.
+            rms = self.audio_meter.calculate_rms(indata)
+            self.current_live_db = self.audio_meter.calculate_relative_db(rms)
+
+            # 콜백은 항상 버퍼에 데이터를 채워 넣습니다.
+            self.recorded_chunks.append(indata.copy())
+
+        try:
+            self.stream = sd.InputStream(samplerate=48000, channels=2, dtype='float32', callback=callback)
+            self.stream.start()
+        except Exception as e:
+            self.stream = None
+            print(f"[마이크 에러]: {e}")
+
+    def stop_stream(self):
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
 
     def handle_event(self, event, game_state) -> str | None:
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_0:
+            self._release_stage_audio()
             return "stage3"
         if getattr(event, "type", None) == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self._release_stage_audio()
             return "quit"
         return None
 
     def update(self, dt, game_state, services) -> str | None:
         self._elapsed += dt
 
-        if self._pending_game_over_elapsed is not None:
-            self._pending_game_over_elapsed += dt
-            if self._pending_game_over_elapsed >= _RESULT_DISPLAY_SECONDS:
+        # 인트로 2초 대기
+        if not self.intro_done:
+            transition = apply_global_rules(dt, self._elapsed, game_state, services)
+            if transition is not None:
+                self._release_stage_audio()
+                return transition
+            if self._elapsed >= self.intro_duration:
+                self.intro_done = True
+                self._prepare_stage_audio(services)
+                return None
+            return None
+
+        # 현재 목표 대사 세팅
+        target_text = "나 여기 있어"
+        
+        self.recognizer.target_text = target_text
+
+        speech = services.get("speech")
+        if speech is not None and hasattr(speech, "target_text"):
+            speech.target_text = target_text
+        if services.get("audio") is None and hasattr(speech, "recognize"):
+            return self._update_without_audio_stream(dt, game_state, speech)
+
+        # -----------------------------------------------------------------
+        # 1. 10초 카운트다운 (말하기 전 대기 상태)
+        # -----------------------------------------------------------------
+        if self.audio_status == "RECORDING":
+            self.time_elapsed += dt
+            self.progress = min((self.time_elapsed / self.time_limit) * 100.0, 100.0)
+
+            # 조용할 때는 버퍼를 계속 비워줍니다. (첫 음절이 안 잘리게 최근 데이터만 유지)
+            if self.current_live_db < self.custom_audio_limit:
+                if len(self.recorded_chunks) > 10: 
+                    self.recorded_chunks = self.recorded_chunks[-5:]
+            
+            # 💥 50dB 이상 소리가 감지되면 즉시 녹음 집중 모드로 전환!
+            else:
+                self.audio_status = "CAPTURING_SPEECH"
+                self.capture_timer = 0.0
+                print(f"[목소리 감지!] {self.current_live_db}dB. 지금부터 3초간 문장을 끝까지 녹음합니다.")
+
+            # 10초 초과 시 게임 오버
+            if self.progress >= 100.0:
+                self._release_stage_audio()
+                game_state.enter_game_over("시간 초과! 제한 시간 내에 대사를 읽지 못했습니다.")
+                return "game_over"
+
+        # -----------------------------------------------------------------
+        # 2. 목소리 담기 (💡 3초 동안 프로그래스 바 정지 후 느긋하게 끝까지 듣기!)
+        # -----------------------------------------------------------------
+        elif self.audio_status == "CAPTURING_SPEECH":
+            self.capture_timer += dt
+            # 말을 시작한 시점부터 3초 동안 충분히 녹음합니다.
+            if self.capture_timer >= 3.0:
+                self.audio_status = "ANALYZING"
+                
+                if len(self.recorded_chunks) > 0:
+                    merged_audio = np.concatenate(self.recorded_chunks, axis=0)
+                    try:
+                        # 48000Hz 데이터를 Scipy로 변환하여 정밀 채점
+                        result = self.recognizer.recognize_buffer(merged_audio, source_sample_rate=48000)
+                        
+                        if result.recognized_text:
+                            self.user_spoken_text = result.recognized_text.strip()
+                            self.match_ratio_percent = round(result.similarity * 100.0, 1)
+                        else:
+                            self.user_spoken_text = "(판독 불가)"
+                            self.match_ratio_percent = 0.0
+                            
+                        print(f"[분석 결과] '{self.user_spoken_text}' | 일치율: {self.match_ratio_percent}%")
+                        
+                        # 🎯 일치율 50% 이상 돌파 성공!
+                        if self.match_ratio_percent >= 50.0:
+                            self.audio_status = "PHASE_CLEAR"
+                        else:
+                            self.audio_status = "FAILED_MATCH"
+                            
+                    except Exception as e:
+                        print(f"[AI 에러]: {e}")
+                        self.audio_status = "FAILED_MATCH"
+                
+                self.delay_timer = 0.0
+
+        # -----------------------------------------------------------------
+        # 3-A. 실패 (50% 미만) -> 1.5초 후 재도전
+        # -----------------------------------------------------------------
+        elif self.audio_status == "FAILED_MATCH":
+            self.delay_timer += dt
+            if self.delay_timer >= 1.5:
+                self.recorded_chunks = []
+                self.audio_status = "RECORDING"
+
+        # -----------------------------------------------------------------
+        # 3-B. 통과 (50% 이상) -> 다음 단계 진입
+        # -----------------------------------------------------------------
+        elif self.audio_status == "PHASE_CLEAR":
+            self.delay_timer += dt
+            if self.delay_timer >= 2.0:
+                self._release_stage_audio()
+                game_state.mark_stage_clear(2)
+                return "stage3"
+
+        return None
+
+    def _prepare_stage_audio(self, services) -> None:
+        audio = services.get("audio")
+        if audio is None:
+            return
+        if audio is not None and hasattr(audio, "release"):
+            audio.release()
+        self._start_audio_stream()
+
+    def _release_stage_audio(self) -> None:
+        self.stop_stream()
+        self.recognizer.release()
+
+    def _update_without_audio_stream(self, dt, game_state, speech) -> str | None:
+        if self._pending_speech_game_over:
+            self.delay_timer += dt
+            if self.delay_timer >= 1.0:
                 game_state.enter_game_over(SOUND_LIMIT_REASON)
                 return "game_over"
             return None
 
-        if not self.intro_done:
-            transition = apply_global_rules(dt, self._elapsed, game_state, services)
-            if transition is not None:
-                return transition
-
-        if self._elapsed < self.intro_duration:
-            return None
-        if not self.intro_done:
-            self.intro_done = True
+        if self._legacy_speech_checked:
             return None
 
-        speech = services.get("speech")
-        if speech is None:
-            return None
-
-        speech.target_text = _TARGET_TEXT
-        self.audio_status = "RECORDING"
-        self.time_elapsed = 0.0
-        self.progress = 0.0
-
-        self.audio_status = "ANALYZING"
-        result = speech.recognize(_RECORD_SECONDS)
-        self.time_elapsed = self.time_limit
-        self.progress = 100.0
-        self.user_spoken_text = result.recognized_text.strip() or "(판독 불가)"
-        self.match_ratio_percent = round(result.similarity * 100.0, 1)
-
-        if self.user_spoken_text != "(판독 불가)":
+        self._legacy_speech_checked = True
+        result = speech.recognize(5.0)
+        if result.recognized_text:
+            self.user_spoken_text = result.recognized_text.strip()
+            self.match_ratio_percent = round(result.similarity * 100.0, 1)
             self.audio_status = "FAILED_MATCH"
-            self._pending_game_over_elapsed = 0.0
+            self.delay_timer = 0.0
+            self._pending_speech_game_over = True
             return None
 
-        self.audio_status = "PHASE_CLEAR"
+        self.user_spoken_text = "(판독 불가)"
+        self.match_ratio_percent = 0.0
         game_state.mark_stage_clear(2)
         return "stage3"
 
     def draw(self, screen, game_state, services) -> None:
-        if not hasattr(screen, "fill"):
-            return None
-
+        if not hasattr(screen, "fill"): return None
         screen.fill((0, 0, 0))
-
+        
+        # 💡 Stage 1과 완벽하게 동일한 인트로 CSS 연출
         if not self.intro_done:
             font = pygame.font.Font(config.FONT_PATH, 96)
             text = font.render("STAGE 2", True, (255, 255, 255))
-            screen.blit(
-                text,
-                text.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2)),
-            )
-            return None
+            screen.blit(text, text.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2)))
+            return
 
+        # 본 게임 폰트 설정
         font = pygame.font.Font(config.FONT_PATH, 38)
         sub_font = pygame.font.Font(config.FONT_PATH, 22)
         phase_font = pygame.font.Font(config.FONT_PATH, 26)
         status_font = pygame.font.Font(config.FONT_PATH, 26)
         debug_font = pygame.font.Font(config.FONT_PATH, 22)
 
-        text_str = f"소리를 내지 마세요: '{_TARGET_TEXT}'"
-        sub_text = "5초 동안 입력된 소리를 Whisper가 텍스트로 변환합니다."
+        text_str = "화면의 대사를 소리 내어 읽으세요: '나 여기 있어'"
+        sub_text = "제한 시간 내에 또박또박 대사를 완독해야 합니다."
         bar_color = (0, 180, 255)
 
-        text_color = (200, 0, 0)
-        text_surface = font.render(text_str, True, text_color)
-        screen.blit(
-            text_surface,
-            text_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 110)),
-        )
-
-        sub_color = (120, 120, 120)
-        sub_surface = sub_font.render(sub_text, True, sub_color)
-        screen.blit(
-            sub_surface,
-            sub_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 60)),
-        )
+        text_surface = font.render(text_str, True, (200, 0, 0))
+        screen.blit(text_surface, text_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 110)))
+        
+        sub_surface = sub_font.render(sub_text, True, (120, 120, 120))
+        screen.blit(sub_surface, sub_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 60)))
 
         if self.audio_status == "RECORDING":
-            status_str = "음성 대기 중: 아무 소리도 내지 마세요."
-            status_color = (0, 255, 100)
+            status_str, status_color = "🟢 [ 음성 대기 중 ] 제한 시간 내에 대사를 읽어주세요.", (0, 255, 100)
         elif self.audio_status == "CAPTURING_SPEECH":
-            status_str = "목소리 감지됨: 입력을 듣고 있습니다..."
-            status_color = (255, 100, 100)
+            status_str, status_color = "🔴 [ 목소리 감지됨 ] 대사를 끝까지 듣고 있습니다...", (255, 100, 100)
         elif self.audio_status == "ANALYZING":
-            status_str = "AI 분석 중: 목소리와 문장의 일치율을 계산하고 있습니다..."
-            status_color = (0, 255, 255)
+            status_str, status_color = "🤖 [ AI 분석 중 ] 목소리와 문장을 채점하고 있습니다...", (0, 255, 255)
         elif self.audio_status == "FAILED_MATCH":
-            status_str = f"실패: 소리가 감지되었습니다. 일치율 {self.match_ratio_percent}%"
-            status_color = (255, 50, 50)
-        else:
-            status_str = f"통과: 감지된 문장이 없습니다. 일치율 {self.match_ratio_percent}%"
-            status_color = (0, 255, 0)
-
+            status_str, status_color = f"⚠️ [ 실패 ] 일치율 50% 미달. 다시 읽으세요! ({self.match_ratio_percent}%)", (255, 50, 50)
+        elif self.audio_status == "PHASE_CLEAR":
+            status_str, status_color = f"✅ [ 통과 ] 일치율 {self.match_ratio_percent}% 달성! 다음 단계로...", (0, 255, 0)
+            
         status_surface = status_font.render(status_str, True, status_color)
-        screen.blit(
-            status_surface,
-            status_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 15)),
-        )
+        screen.blit(status_surface, status_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 15)))
 
-        spoken_display = (
-            f"AI 인식 문장: \"{self.user_spoken_text}\"  |  "
-            f"현재 일치율: {self.match_ratio_percent}%"
-        )
-        result_color = (180, 180, 180) if self.match_ratio_percent < 50.0 else (100, 255, 100)
-        result_surface = debug_font.render(spoken_display, True, result_color)
-        screen.blit(
-            result_surface,
-            result_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 35)),
-        )
+        spoken_display = f"AI 인식 문장: \"{self.user_spoken_text}\"  |  현재 일치율: {self.match_ratio_percent}%"
+        result_surface = debug_font.render(spoken_display, True, (180, 180, 180) if self.match_ratio_percent < 50.0 else (100, 255, 100))
+        screen.blit(result_surface, result_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 35)))
+
+        db_display = f"현재 소음도: {self.current_live_db} dB  /  음성 인식 커트라인: {self.custom_audio_limit} dB"
+        db_surface = debug_font.render(db_display, True, (0, 220, 100) if self.current_live_db < self.custom_audio_limit else (255, 100, 0))
+        screen.blit(db_surface, db_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 65)))
 
         remaining_time = max(0.0, self.time_limit - self.time_elapsed)
-        phase_surface = phase_font.render(
-            f"음성 회피 단계 | 남은 시간: {round(remaining_time, 1)}초",
-            True,
-            (255, 255, 255),
-        )
-        screen.blit(
-            phase_surface,
-            phase_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 75)),
-        )
+        phase_surface = phase_font.render(f"음성 돌파 단계  |  남은 시간: {round(remaining_time, 1)}초", True, (255, 255, 255))
+        screen.blit(phase_surface, phase_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + 105)))
 
         bar_width, bar_height = 500, 20
-        bar_x = (config.SCREEN_WIDTH - bar_width) // 2
-        bar_y = (config.SCREEN_HEIGHT // 2) + 110
+        bar_x, bar_y = (config.SCREEN_WIDTH - bar_width) // 2, (config.SCREEN_HEIGHT // 2) + 140
         pygame.draw.rect(screen, (70, 70, 70), (bar_x, bar_y, bar_width, bar_height), 2)
-        fill_width = int(bar_width * (self.progress / 100.0))
-        if fill_width > 0:
+        if (fill_width := int(bar_width * (self.progress / 100.0))) > 0:
             pygame.draw.rect(screen, bar_color, (bar_x, bar_y, fill_width, bar_height))
+
         return None
